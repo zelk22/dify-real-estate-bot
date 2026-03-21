@@ -2,85 +2,211 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>ניהול הכשרה רכבת - V14.0 Compliance</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>מערכת הכשרת נהגים - V20</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-
-    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
-
     <style>
-        :root { --rail-dark: #1a2a3a; --rail-blue: #3498db; --bg: #f4f7f9; --danger: #e74c3c; --warning: #f39c12; --success: #27ae60; --tech: #3498db; --ops: #f1c40f; --comm: #2ecc71; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 10px; color: #333; direction: rtl; }
-        .container { max-width: 1200px; margin: auto; }
-        .view { display: none; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); margin-top: 10px; }
-        .active-view { display: block; }
-        
-        header { border-bottom: 3px solid var(--rail-blue); margin-bottom: 20px; padding-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
-        
-        .roadmap-wrapper { position: relative; padding: 30px 0 10px 0; margin: 30px 0; }
-        .roadmap-container { width: 100%; height: 45px; background: #eee; border-radius: 8px; position: relative; display: flex; border: 1px solid #ccc; overflow: hidden; }
-        .roadmap-segment { height: 100%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 0.85em; z-index: 1; opacity: 0.9; }
-        .roadmap-ticks { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: space-between; z-index: 2; pointer-events: none; }
-        .tick { width: 1px; height: 100%; background: rgba(0,0,0,0.1); }
-        .flag { position: absolute; top: -18px; font-size: 16px; transform: translateX(50%); z-index: 5; }
-        .train-marker { position: absolute; top: -14px; transition: 1.2s cubic-bezier(0.4, 0, 0.2, 1); z-index: 10; font-size: 28px; transform: translateX(50%); }
+        :root {
+            --rail-dark: #1a2a3a;
+            --rail-blue: #2d7dd2;
+            --bg: #f0f4f8;
+            --danger: #e53e3e;
+            --warning: #d69e2e;
+            --success: #38a169;
+            --tech: #4299e1;
+            --ops: #ecc94b;
+            --comm: #48bb78;
+            --neutral: #a0aec0;
+            --card-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
 
-        .alerts-box { background: #fffdf0; border: 2px solid #f1c40f; padding: 15px; border-radius: 10px; margin-bottom: 25px; min-height: 40px; }
+        * { box-sizing: border-box; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); margin: 0; padding: 15px; color: #2d3748; direction: rtl; }
+        .container { max-width: 1100px; margin: auto; }
 
-        .form-section { background: var(--rail-dark); color: white; padding: 25px; border-radius: 12px; margin-top: 40px; }
-        .top-form-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; align-items: end; }
-        .top-form-grid input, .top-form-grid select { width: 100%; padding: 10px; border-radius: 6px; border: none; font-size: 1em; box-sizing: border-box; }
-        .req { color: var(--danger); margin-right: 3px; }
-
-        .skill-input-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 20px; text-align: center; }
-        .skill-input-grid input { width: 100%; padding: 10px; border-radius: 6px; border: none; text-align: center; font-weight: bold; font-size: 1.1em; box-sizing: border-box; }
-
-        .chip { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 4px; border: 1px solid #ccc; font-size: 0.8em; transition: 0.2s; cursor: pointer; user-select: none; }
-
-        #sig-canvas { border: 2px dashed #bdc3c7; background: #fff; cursor: crosshair; touch-action: none; width: 100%; height: 120px; border-radius: 8px; }
-
-        table { width: 100%; border-collapse: collapse; font-size: 0.9em; margin-top: 15px; }
-        th, td { text-align: center; padding: 12px; border: 1px solid #eee; }
-        th { background: #f8f9fa; }
-        .score-val { background: #f1f3f5; padding: 3px 6px; border-radius: 4px; font-weight: bold; margin: 0 2px; }
-
-        .btn { padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: bold; border: none; }
-        .btn-success { background: var(--success); color: white; width: 100%; font-size: 1.2em; }
-
-        #loading-screen { position: fixed; inset: 0; background: #1a2a3a; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; color: white; font-size: 1.3em; gap: 15px; }
-        .spinner { width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.2); border-top-color: #3498db; border-radius: 50%; animation: spin 0.8s linear infinite; }
+        /* Loading */
+        #loading-screen { position: fixed; inset: 0; background: var(--rail-dark); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; color: white; gap: 18px; }
+        .spinner { width: 48px; height: 48px; border: 5px solid rgba(255,255,255,0.15); border-top-color: var(--rail-blue); border-radius: 50%; animation: spin 0.8s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-text { font-size: 1.1em; color: #a0aec0; }
+
+        /* Views */
+        .view { display: none; background: white; padding: 30px; border-radius: 20px; box-shadow: var(--card-shadow); margin-top: 10px; }
+        .active-view { display: block; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Header */
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; flex-wrap: wrap; gap: 12px; }
+        .header-title { font-size: 1.9em; font-weight: 800; color: var(--rail-dark); margin: 0; }
+        .header-title span { color: var(--rail-blue); }
+        .header-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+        /* Buttons */
+        .btn { padding: 10px 20px; border-radius: 10px; cursor: pointer; font-weight: 700; border: none; transition: all 0.2s; font-size: 0.95em; display: inline-flex; align-items: center; gap: 6px; }
+        .btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
+        .btn-primary { background: var(--rail-blue); color: white; }
+        .btn-dark { background: var(--rail-dark); color: white; }
+        .btn-ghost { background: white; border: 1.5px solid #e2e8f0; color: #4a5568; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-success-full { background: var(--success); color: white; width: 100%; font-size: 1.2em; margin-top: 28px; padding: 16px; justify-content: center; }
+
+        /* Instructor Manager */
+        .ins-manager { background: #f7fafc; padding: 22px; border-radius: 14px; margin-bottom: 24px; border: 1.5px solid #e2e8f0; }
+        .ins-manager h4 { margin: 0 0 14px 0; color: var(--rail-dark); font-size: 1em; }
+        .ins-input-row { display: flex; gap: 10px; }
+        .ins-input-row input { flex: 1; padding: 11px 14px; border-radius: 8px; border: 1.5px solid #e2e8f0; font-size: 0.95em; }
+        .ins-tags { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 8px; }
+        .ins-tag { background: white; border: 1.5px solid #e2e8f0; border-radius: 20px; padding: 5px 12px 5px 8px; font-size: 0.88em; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .ins-tag button { background: none; border: none; color: var(--danger); cursor: pointer; font-size: 1em; padding: 0; line-height: 1; font-weight: bold; }
+
+        /* Trainee Cards */
+        #trainee-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 20px; }
+        .trainee-card { background: white; border-radius: 16px; box-shadow: var(--card-shadow); border: 1.5px solid #e8edf3; overflow: hidden; transition: all 0.25s; cursor: pointer; position: relative; }
+        .trainee-card:hover { transform: translateY(-4px); box-shadow: 0 12px 30px rgba(0,0,0,0.12); }
+        .card-top { background: linear-gradient(135deg, var(--rail-dark), #2c4a6e); padding: 22px 20px 18px; }
+        .card-name { color: white; font-size: 1.25em; font-weight: 700; margin: 0 0 4px 0; }
+        .card-sub { color: #a0b4c8; font-size: 0.85em; }
+        .card-progress { height: 5px; background: rgba(255,255,255,0.15); border-radius: 3px; margin-top: 14px; }
+        .card-progress-bar { height: 100%; background: var(--rail-blue); border-radius: 3px; transition: width 0.5s; }
+        .card-bottom { padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; }
+        .card-lessons-count { font-size: 0.9em; color: #718096; font-weight: 600; }
+        .card-actions { display: flex; gap: 6px; }
+        .card-action-btn { background: none; border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 5px 10px; cursor: pointer; font-size: 0.8em; color: #4a5568; transition: 0.2s; }
+        .card-action-btn:hover { background: #f7fafc; }
+        .card-action-btn.del:hover { background: #fff5f5; border-color: var(--danger); color: var(--danger); }
+
+        /* Detail view top */
+        .detail-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; flex-wrap: wrap; gap: 10px; }
+
+        /* Roadmap */
+        .roadmap-wrapper { position: relative; padding: 48px 0 8px 0; margin: 40px 0 28px 0; }
+        .roadmap-container { width: 100%; height: 32px; background: #e2e8f0; border-radius: 6px; position: relative; display: flex; overflow: hidden; }
+        .roadmap-segment { height: 100%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 0.8em; }
+        .flag-anchor { position: absolute; bottom: 32px; transform: translateX(50%); display: flex; flex-direction: column; align-items: center; z-index: 5; pointer-events: none; }
+        .flag-top { font-size: 20px; line-height: 1; }
+        .flag-pole { width: 2px; height: 32px; background: #4a5568; }
+        .train-marker { position: absolute; top: -16px; transition: 1.5s cubic-bezier(0.22, 1, 0.36, 1); z-index: 10; font-size: 30px; transform: translateX(50%); filter: drop-shadow(0 3px 5px rgba(0,0,0,0.2)); }
+        .roadmap-ticks { position: absolute; inset: 0; display: flex; justify-content: space-between; z-index: 2; pointer-events: none; }
+        .tick { width: 1px; height: 100%; background: rgba(0,0,0,0.06); }
+
+        /* Insight box */
+        .insight-box { background: #ebf8ff; border: 1.5px solid #bee3f8; border-right: 5px solid var(--rail-blue); padding: 18px 20px; border-radius: 12px; margin-bottom: 24px; display: flex; gap: 14px; align-items: flex-start; }
+        .insight-icon { font-size: 22px; }
+        .insight-content b { color: var(--rail-dark); display: block; margin-bottom: 4px; }
+        .insight-content span { color: #4a5568; font-size: 0.95em; line-height: 1.5; }
+
+        /* Stats */
+        .section-title { font-size: 1.1em; font-weight: 700; margin: 28px 0 14px 0; color: var(--rail-dark); border-right: 4px solid var(--rail-blue); padding-right: 12px; }
+        .stats-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+        .stat-card { padding: 18px 10px; border-radius: 14px; text-align: center; color: white; font-weight: 700; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .stat-card .stat-label { font-size: 0.8em; opacity: 0.9; margin-bottom: 6px; }
+        .stat-card .stat-val { font-size: 1.9em; }
+
+        /* Log */
+        .log-header { background: #f7fafc; width: 100%; padding: 16px 20px; border-radius: 12px; border: 1.5px solid #e2e8f0; margin-top: 28px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-weight: 700; font-size: 0.95em; color: #4a5568; }
+        .log-header:hover { background: #edf2f7; }
+        .log-body { display: none; overflow-x: auto; padding-top: 14px; }
+        .log-body.open { display: block; }
+        table { width: 100%; border-collapse: collapse; min-width: 750px; }
+        th { background: #f7fafc; padding: 13px 10px; color: #718096; font-size: 0.82em; border-bottom: 2px solid #e2e8f0; text-align: center; font-weight: 700; }
+        td { padding: 13px 10px; border-bottom: 1px solid #f0f4f8; text-align: center; font-size: 0.9em; }
+        .score-badge { background: #edf2f7; padding: 4px 8px; border-radius: 6px; font-weight: 700; font-size: 0.85em; margin: 0 2px; border: 1px solid #e2e8f0; }
+
+        /* Form */
+        .form-section { background: var(--rail-dark); color: white; padding: 28px; border-radius: 20px; margin-top: 36px; }
+        .form-section h3 { margin: 0 0 24px 0; color: var(--ops); font-size: 1.3em; border-bottom: 1px solid #2d4a6a; padding-bottom: 14px; }
+        .top-form-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-bottom: 22px; }
+        .form-group label { display: block; margin-bottom: 8px; font-size: 0.85em; color: #90a4b4; font-weight: 600; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 11px 14px; border-radius: 8px; border: 1.5px solid #2d4a6a; background: #243447; color: white; font-size: 0.95em; font-family: inherit; }
+        .form-group select option { background: #1a2a3a; }
+
+        /* Chips */
+        .chips-label { font-size: 0.85em; color: #90a4b4; font-weight: 600; display: block; margin-bottom: 12px; }
+        #lesson-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+        .chip { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-size: 0.82em; font-weight: 700; cursor: pointer; border: 1.5px solid #2d4a6a; transition: 0.15s; }
+
+        /* Skill grid */
+        .skill-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-top: 20px; }
+        .skill-box { background: rgba(255,255,255,0.05); padding: 14px 10px; border-radius: 12px; border: 1.5px solid rgba(255,255,255,0.08); text-align: center; }
+        .skill-box label { display: block; color: var(--ops); font-size: 0.8em; margin-bottom: 10px; font-weight: 700; }
+        .skill-box input { width: 80%; padding: 10px 5px; text-align: center; font-size: 1.35em; font-weight: 700; border-radius: 8px; border: 2px solid var(--rail-blue); background: #1a2a3a; color: white; }
+
+        /* Signature */
+        .sig-wrapper { background: white; padding: 22px; border-radius: 14px; margin-top: 28px; text-align: center; }
+        .sig-wrapper label { color: var(--rail-dark); font-weight: 700; display: block; margin-bottom: 12px; }
+        #sig-canvas { border: 2px dashed #cbd5e0; cursor: crosshair; touch-action: none; width: 100%; height: 140px; border-radius: 10px; display: block; }
+        .sig-clear { background: none; border: none; color: var(--danger); cursor: pointer; font-size: 0.9em; margin-top: 10px; font-weight: 700; }
+
+        /* Mobile */
+        @media (max-width: 680px) {
+            body { padding: 10px; }
+            .view { padding: 18px; border-radius: 14px; }
+            .header-title { font-size: 1.4em; }
+            #trainee-list { grid-template-columns: 1fr; }
+            .top-form-grid { grid-template-columns: 1fr; }
+            .stats-row { grid-template-columns: repeat(3, 1fr); }
+            .skill-grid { grid-template-columns: repeat(3, 1fr); }
+            .detail-top { flex-direction: column; align-items: stretch; }
+            .detail-top .btn { justify-content: center; }
+        }
+        @media (max-width: 420px) {
+            .stats-row { grid-template-columns: repeat(2, 1fr); }
+            .skill-grid { grid-template-columns: repeat(2, 1fr); }
+        }
     </style>
 </head>
 <body>
 
-<!-- מסך טעינה -->
 <div id="loading-screen">
     <div class="spinner"></div>
-    <span>מתחבר למסד הנתונים...</span>
+    <div class="loading-text">מתחבר למסד הנתונים...</div>
 </div>
 
 <div class="container">
+
+    <!-- דף ראשי -->
     <div id="main-view" class="view">
         <header>
-            <h1>ניהול הכשרת רכבת</h1>
-            <button class="btn btn-blue" style="background:var(--rail-blue); color:white;" onclick="addNewTrainee()">+ הוסף חניך</button>
+            <h1 class="header-title">ניהול הכשרת <span>נהגים</span></h1>
+            <div class="header-actions">
+                <button class="btn btn-ghost" onclick="toggleInsManager()">⚙️ מדריכים</button>
+                <button class="btn btn-primary" onclick="addNewTrainee()">+ חניך חדש</button>
+            </div>
         </header>
-        <div id="trainee-list" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:20px;"></div>
+
+        <div id="ins-manager" style="display:none">
+            <div class="ins-manager">
+                <h4>👨‍🏫 ניהול מאגר מדריכים / חונכים</h4>
+                <div class="ins-input-row">
+                    <input type="text" id="new-ins-name" placeholder="שם המדריך / חונך..." onkeydown="if(event.key==='Enter') addInstructor()">
+                    <button class="btn btn-dark" onclick="addInstructor()">הוסף</button>
+                </div>
+                <div id="ins-tags" class="ins-tags"></div>
+            </div>
+        </div>
+
+        <div id="trainee-list"></div>
+        <p id="empty-msg" style="display:none; text-align:center; color:#a0aec0; margin-top:40px; font-size:1.05em;">אין חניכים עדיין — לחץ על "+ חניך חדש" כדי להתחיל</p>
     </div>
 
+    <!-- דף פרטי חניך -->
     <div id="detail-view" class="view">
-        <button class="btn" style="background:#95a5a6; color:white; margin-bottom:20px;" onclick="showMainView()">← חזרה לרשימה</button>
-        
-        <div id="report-area">
-            <h2 id="det-name" style="margin:0; font-size: 2em;">שם חניך</h2>
-            
+        <div class="detail-top">
+            <button class="btn btn-ghost" onclick="showMainView()">← חזרה לרשימה</button>
+            <button class="btn btn-dark" onclick="exportPDF()">📥 דוח PDF</button>
+        </div>
+
+        <div id="pdf-content">
+            <h1 id="det-name" style="margin:0 0 4px 0; font-size:2.4em; color:var(--rail-dark); font-weight:800;">-</h1>
+            <p id="det-sub" style="color:#a0aec0; margin:0 0 10px 0; font-size:0.95em;"></p>
+
             <div class="roadmap-wrapper">
                 <div id="train-marker" class="train-marker">🚂</div>
-                <div class="flag" style="right: 20%;">🚩</div>
-                <div class="flag" style="right: 60%;">🚩</div>
-                <div class="flag" style="right: 100%;">🚩</div>
+                <div class="flag-anchor" style="right:20%"><span class="flag-top">🚩</span><div class="flag-pole"></div></div>
+                <div class="flag-anchor" style="right:60%"><span class="flag-top">🚩</span><div class="flag-pole"></div></div>
+                <div class="flag-anchor" style="right:100%"><span class="flag-top">🏁</span><div class="flag-pole" style="width:3px; background:#000;"></div></div>
                 <div class="roadmap-container">
                     <div class="roadmap-ticks" id="roadmap-ticks"></div>
                     <div class="roadmap-segment" style="width:20%; background:var(--tech);">טכני</div>
@@ -89,279 +215,415 @@
                 </div>
             </div>
 
-            <div id="det-summary" class="alerts-box"></div>
+            <div id="insight-area" class="insight-box">
+                <div id="insight-icon" class="insight-icon">💡</div>
+                <div class="insight-content">
+                    <b>תובנות והמלצות</b>
+                    <span id="insight-text">המערכת מנתחת נתונים...</span>
+                </div>
+            </div>
 
-            <h3 style="border-right: 5px solid var(--rail-blue); padding-right: 15px; margin-top:40px;">יומן שיעורים</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>תאריך</th><th>משימה</th><th>שיעורים</th><th>מדריך</th><th style="background:#eef2f7">ר/ק/ס/נ/מ</th><th>הערות המשוב</th>
-                    </tr>
-                </thead>
-                <tbody id="history-table-body"></tbody>
-            </table>
+            <div class="section-title">סטטוס כשירות</div>
+            <div class="stats-row" id="stats-row"></div>
+
+            <div class="log-header" onclick="document.getElementById('log-body').classList.toggle('open')">
+                <span>📋 יומן שיעורים מלא</span>
+                <span>▼</span>
+            </div>
+            <div id="log-body" class="log-body">
+                <table>
+                    <thead>
+                        <tr><th>תאריך</th><th>משימה</th><th>שיעורים</th><th>מדריך</th><th>ר/ק/ס/נ/מ</th><th>הערות</th></tr>
+                    </thead>
+                    <tbody id="history-table-body"></tbody>
+                </table>
+            </div>
         </div>
 
+        <!-- טופס משוב -->
         <div class="form-section no-print">
-            <h3 style="margin-top:0; color: #f1c40f;">✍️ דיווח משוב יומי חדש</h3>
+            <h3>✍️ דיווח משוב יומי חדש</h3>
             <div class="top-form-grid">
-                <div><label><span class="req">*</span>תאריך</label><input type="date" id="in-date"></div>
-                <div><label><span class="req">*</span>סוג משימה</label>
+                <div class="form-group"><label>תאריך</label><input type="date" id="in-date"></div>
+                <div class="form-group">
+                    <label>סוג המשימה</label>
                     <select id="in-mission" onchange="updateChips()">
-                        <option value="קורס">קורס (לפי סדר)</option>
-                        <option value="חניכה">חניכה</option>
-                        <option value="שעות נוספות">שעות נוספות</option>
+                        <option value="קורס">שיעור קורס סדיר</option>
+                        <option value="חניכה">חניכה מעשית בשטח</option>
+                        <option value="שעות נוספות">שעות נוספות / תגבור</option>
                     </select>
                 </div>
-                <div><label><span class="req">*</span>מדריך</label><input type="text" id="in-ins" placeholder="שם מלא"></div>
+                <div class="form-group"><label>מדריך / חונך</label><select id="in-ins-select"></select></div>
             </div>
 
-            <div style="margin-top:20px;">
-                <label style="font-weight: bold; color: #bdc3c7;">בחירת שיעורים (חובה לשמור על רצף):</label>
-                <div id="lesson-chips" style="display:flex; flex-wrap:wrap; gap:6px; margin-top:10px;"></div>
-                <input type="text" id="in-extra-desc" style="display:none; width:100%; margin-top:10px; padding:12px; border-radius:6px;" placeholder="נושא השעות הנוספות...">
+            <span class="chips-label">סמן שיעורים שבוצעו (שמור על רצף):</span>
+            <div id="lesson-chips"></div>
+            <div class="form-group" style="margin-top:14px; display:none" id="extra-desc-wrap">
+                <input type="text" id="in-extra-desc" placeholder="פרט את נושא השיעור הנוסף...">
             </div>
 
-            <div class="skill-input-grid">
-                <div><label><span class="req">*</span>רכבת</label><input type="number" id="in-s1" min="1" max="10"></div>
-                <div><label><span class="req">*</span>קו</label><input type="number" id="in-s2" min="1" max="10"></div>
-                <div><label><span class="req">*</span>סטיק</label><input type="number" id="in-s3" min="1" max="10"></div>
-                <div><label><span class="req">*</span>נהלים</label><input type="number" id="in-s4" min="1" max="10"></div>
-                <div><label><span class="req">*</span>משמעת</label><input type="number" id="in-s5" min="1" max="10"></div>
+            <div class="skill-grid">
+                <div class="skill-box"><label>רכבת</label><input type="number" id="in-s1" min="1" max="10"></div>
+                <div class="skill-box"><label>קו</label><input type="number" id="in-s2" min="1" max="10"></div>
+                <div class="skill-box"><label>סטיק</label><input type="number" id="in-s3" min="1" max="10"></div>
+                <div class="skill-box"><label>נהלים</label><input type="number" id="in-s4" min="1" max="10"></div>
+                <div class="skill-box"><label>משמעת</label><input type="number" id="in-s5" min="1" max="10"></div>
             </div>
 
-            <textarea id="in-notes" placeholder="הערות (רשות)..." style="width:100%; margin-top:20px; height:60px; padding:12px; border-radius:6px;"></textarea>
+            <div class="form-group" style="margin-top:20px;">
+                <textarea id="in-notes" rows="3" placeholder="הערות מקצועיות, דגשים לשיפור או נקודות לשימור..."></textarea>
+            </div>
 
-            <div style="background:white; padding:15px; border-radius:8px; margin-top:20px; text-align:center;">
-                <label style="color:#333; font-weight:bold; display:block; margin-bottom:10px;"><span class="req">*</span>חתימת מדריך לאישור:</label>
+            <div class="sig-wrapper">
+                <label>חתימת המדריך / חונך לאישור:</label>
                 <canvas id="sig-canvas"></canvas>
-                <button type="button" onclick="clearSig()" style="margin-top:5px; font-size:0.7em;">נקה חתימה</button>
+                <button class="sig-clear" onclick="clearSig()">✖ נקה חתימה</button>
             </div>
 
-            <button class="btn btn-success" style="margin-top:25px;" onclick="validateAndSave()">שמור נתוני משוב ונעל בסילבוס</button>
+            <button class="btn btn-success-full" onclick="validateAndSave()">💾 שמור משוב במערכת</button>
         </div>
     </div>
 </div>
 
 <script>
-    // ==============================
-    // 🔥 הגדרת Firebase — החלף בconfig שלך!
-    // ==============================
-    const firebaseConfig = {
-        apiKey: "AIzaSyCnv_TtezNA_vC2VaCKgW9uENlkXlPcOxs",
-        authDomain: "dynamic-feedback-system.firebaseapp.com",
-        databaseURL: "https://dynamic-feedback-system-default-rtdb.europe-west1.firebasedatabase.app",
-        projectId: "dynamic-feedback-system",
-        storageBucket: "dynamic-feedback-system.firebasestorage.app",
-        messagingSenderId: "608824054092",
-        appId: "1:608824054092:web:dedb20d936f223aa00ffe9",
-        measurementId: "G-5D99JL60TC"
-    };
+// =============================================
+// 🔥 Firebase Config
+// =============================================
+const firebaseConfig = {
+    apiKey: "AIzaSyCnv_TtezNA_vC2VaCKgW9uENlkXlPcOxs",
+    authDomain: "dynamic-feedback-system.firebaseapp.com",
+    databaseURL: "https://dynamic-feedback-system-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "dynamic-feedback-system",
+    storageBucket: "dynamic-feedback-system.firebasestorage.app",
+    messagingSenderId: "608824054092",
+    appId: "1:608824054092:web:dedb20d936f223aa00ffe9"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const traineesRef = db.ref('trainees_v20');
+const instructorsRef = db.ref('instructors_v20');
 
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-    const traineesRef = db.ref('trainees');
+// =============================================
+// State
+// =============================================
+let trainees = [];
+let instructors = [];
+let currentId = null;
+let selectedLessons = [];
+let isSigned = false;
 
-    // ==============================
-    // משתנים גלובליים
-    // ==============================
-    let trainees = [];
-    let currentId = null;
-    let selectedLessons = [];
-    let isSigned = false;
+// =============================================
+// טעינה ראשונית + Real-time listeners
+// =============================================
+Promise.all([
+    traineesRef.once('value'),
+    instructorsRef.once('value')
+]).then(([tSnap, iSnap]) => {
+    trainees = tSnap.val() ? Object.values(tSnap.val()) : [];
+    instructors = iSnap.val() ? Object.values(iSnap.val()) : [];
+    document.getElementById('loading-screen').style.display = 'none';
+    document.getElementById('main-view').classList.add('active-view');
+    renderTraineeList();
+    renderInsTags();
+}).catch(err => {
+    document.getElementById('loading-screen').innerHTML =
+        `<span style="color:#fc8181; font-size:1.1em;">❌ שגיאת חיבור: ${err.message}</span>`;
+});
 
-    // ==============================
-    // טעינה ראשונית מ-Firebase
-    // ==============================
-    traineesRef.once('value').then(snapshot => {
-        const val = snapshot.val();
-        trainees = val ? Object.values(val) : [];
-        document.getElementById('loading-screen').style.display = 'none';
-        document.getElementById('main-view').classList.add('active-view');
-        renderTraineeList();
-    }).catch(err => {
-        document.getElementById('loading-screen').innerHTML = `<span style="color:#e74c3c">❌ שגיאה בחיבור: ${err.message}</span>`;
-    });
+// Real-time sync
+traineesRef.on('value', snap => {
+    trainees = snap.val() ? Object.values(snap.val()) : [];
+    renderTraineeList();
+    if (currentId) renderDetail();
+});
+instructorsRef.on('value', snap => {
+    instructors = snap.val() ? Object.values(snap.val()) : [];
+    renderInsTags();
+    updateInsDropdown();
+});
 
-    // ==============================
-    // שמירה ל-Firebase
-    // ==============================
-    function save() {
-        const data = {};
-        trainees.forEach(t => { data[t.id] = t; });
-        traineesRef.set(data);
+// =============================================
+// שמירה ל-Firebase
+// =============================================
+function saveTrainees() {
+    const data = {};
+    trainees.forEach(t => { data[t.id] = t; });
+    traineesRef.set(data);
+}
+function saveInstructors() {
+    const data = {};
+    instructors.forEach((name, i) => { data[i] = name; });
+    instructorsRef.set(data);
+}
+
+// =============================================
+// ניהול מדריכים
+// =============================================
+function toggleInsManager() {
+    const d = document.getElementById('ins-manager');
+    d.style.display = d.style.display === 'block' ? 'none' : 'block';
+}
+function addInstructor() {
+    const n = document.getElementById('new-ins-name').value.trim();
+    if (!n) return;
+    if (instructors.includes(n)) { alert('מדריך זה כבר קיים.'); return; }
+    instructors.push(n);
+    document.getElementById('new-ins-name').value = '';
+    saveInstructors();
+}
+function removeInstructor(name) {
+    if (!confirm(`למחוק את "${name}"?`)) return;
+    instructors = instructors.filter(i => i !== name);
+    saveInstructors();
+}
+function renderInsTags() {
+    const c = document.getElementById('ins-tags');
+    if (!c) return;
+    c.innerHTML = instructors.length === 0
+        ? '<p style="color:#a0aec0; font-size:0.88em; margin:8px 0 0 0;">אין מדריכים עדיין.</p>'
+        : instructors.map(n => `
+            <span class="ins-tag">
+                ${n}
+                <button onclick="removeInstructor('${n.replace(/'/g, "\\'")}')" title="הסר">✕</button>
+            </span>`).join('');
+}
+function updateInsDropdown() {
+    const sel = document.getElementById('in-ins-select');
+    if (!sel) return;
+    const cur = sel.value;
+    sel.innerHTML = `<option value="" disabled selected>-- בחר מרשימה --</option>` +
+        instructors.map(i => `<option value="${i}" ${i === cur ? 'selected' : ''}>${i}</option>`).join('');
+}
+
+// =============================================
+// ניהול חניכים
+// =============================================
+function addNewTrainee() {
+    const n = prompt("שם מלא של החניך:");
+    if (n && n.trim()) {
+        trainees.push({ id: Date.now(), name: n.trim(), lessons: [] });
+        saveTrainees();
     }
-
-    // ==============================
-    // Canvas — חתימה
-    // ==============================
-    const canvas = document.getElementById('sig-canvas');
-    const ctx = canvas.getContext('2d');
-    let drawing = false;
-    canvas.addEventListener('mousedown', () => { drawing = true; isSigned = true; ctx.beginPath(); });
-    canvas.addEventListener('mousemove', (e) => {
-        if(!drawing) return;
-        const rect = canvas.getBoundingClientRect();
-        ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
-        ctx.stroke();
-    });
-    canvas.addEventListener('mouseup', () => drawing = false);
-    function clearSig() { ctx.clearRect(0,0,canvas.width,canvas.height); isSigned = false; }
-
-    // ==============================
-    // ניווט
-    // ==============================
-    function openTrainee(id) {
-        currentId = id;
-        document.getElementById('main-view').classList.remove('active-view');
-        document.getElementById('detail-view').classList.add('active-view');
-        initTicks(); resetForm(); renderDetail();
+}
+function deleteTrainee(id, name, e) {
+    e.stopPropagation();
+    if (!confirm(`למחוק את "${name}" ואת כל נתוני ההכשרה שלו לצמיתות?`)) return;
+    trainees = trainees.filter(t => t.id !== id);
+    saveTrainees();
+}
+function editTraineeName(id, currentName, e) {
+    e.stopPropagation();
+    const newName = prompt("שם חדש לחניך:", currentName);
+    if (newName && newName.trim() && newName.trim() !== currentName) {
+        const t = trainees.find(x => x.id === id);
+        if (t) { t.name = newName.trim(); saveTrainees(); }
     }
+}
 
-    function showMainView() {
-        document.getElementById('detail-view').classList.remove('active-view');
-        document.getElementById('main-view').classList.add('active-view');
-        renderTraineeList();
-    }
-
-    function initTicks() {
-        const c = document.getElementById('roadmap-ticks'); c.innerHTML = '';
-        for(let i=0; i<=50; i++) { const t = document.createElement('div'); t.className = 'tick'; c.appendChild(t); }
-    }
-
-    // ==============================
-    // לוגיקת שיעורים
-    // ==============================
-    function updateChips() {
-        const mission = document.getElementById('in-mission').value;
-        const container = document.getElementById('lesson-chips');
-        const extraInput = document.getElementById('in-extra-desc');
-        container.innerHTML = '';
-        
-        if(mission === 'שעות נוספות') { container.style.display='none'; extraInput.style.display='block'; return; }
-        container.style.display='flex'; extraInput.style.display='none';
-
-        const t = trainees.find(x => x.id === currentId);
-        const locked = new Set();
-        t.lessons.forEach(l => { if(l.mission !== 'שעות נוספות') l.lessonNums.forEach(n => locked.add(n)); });
-
-        let nextInLine = 1; while(locked.has(nextInLine)) nextInLine++;
-
-        for(let i=1; i<=50; i++) {
-            const isLocked = locked.has(i);
-            const chip = document.createElement('div');
-            chip.className = 'chip';
-            chip.innerText = i;
-            
-            let state = 'disabled';
-            if(isLocked) state = 'locked';
-            else if(i === nextInLine || selectedLessons.includes(i-1)) state = 'available';
-            if(selectedLessons.includes(i)) state = 'selected';
-
-            chip.style.background = state==='locked' ? '#34495e' : state==='selected' ? '#27ae60' : state==='available' ? '#fff' : '#eee';
-            chip.style.color = (state==='locked' || state==='selected') ? '#fff' : '#333';
-            chip.style.opacity = state==='disabled' ? '0.3' : '1';
-            chip.style.cursor = (state==='available' || state==='selected') ? 'pointer' : 'not-allowed';
-
-            if(state === 'available' || state === 'selected') {
-                chip.onclick = () => {
-                    if(selectedLessons.includes(i)) {
-                        selectedLessons = selectedLessons.filter(n => n < i);
-                    } else {
-                        selectedLessons.push(i);
-                    }
-                    updateChips();
-                };
-            }
-            container.appendChild(chip);
-        }
-    }
-
-    // ==============================
-    // שמירת משוב
-    // ==============================
-    function validateAndSave() {
-        const scores = [1,2,3,4,5].map(i => parseInt(document.getElementById('in-s'+i).value));
-        if(!isSigned) return alert("חובה לחתום על המשוב.");
-        if(document.getElementById('in-mission').value !== 'שעות נוספות' && selectedLessons.length === 0) return alert("נא לבחור שיעורים.");
-        if(scores.some(s => isNaN(s) || s < 1 || s > 10)) return alert("חובה למלא את כל הדירוגים (1-10).");
-        if(!document.getElementById('in-ins').value) return alert("נא להזין שם מדריך.");
-
-        const t = trainees.find(x => x.id === currentId);
-        t.lessons.push({
-            date: document.getElementById('in-date').value,
-            mission: document.getElementById('in-mission').value,
-            lessonNums: [...selectedLessons],
-            extraDesc: document.getElementById('in-extra-desc').value,
-            ins: document.getElementById('in-ins').value,
-            s1: scores[0], s2: scores[1], s3: scores[2], s4: scores[3], s5: scores[4],
-            notes: document.getElementById('in-notes').value
-        });
-        save(); resetForm(); renderDetail();
-        alert("המשוב נשמר בהצלחה ב-Firebase ✅");
-    }
-
-    // ==============================
-    // הצגת פרטי חניך
-    // ==============================
-    function renderDetail() {
-        const t = trainees.find(x => x.id === currentId);
-        let maxL = 0, sumS4 = 0;
-        t.lessons.forEach(l => { 
-            l.lessonNums.forEach(n => { if(l.mission !== 'שעות נוספות' && n > maxL) maxL = n; });
-            sumS4 += l.s4;
-        });
-        const avgS4 = t.lessons.length ? sumS4 / t.lessons.length : 10;
-        document.getElementById('det-name').innerText = t.name;
-        document.getElementById('train-marker').style.right = `calc(${(maxL/50)*100}% - 14px)`;
-        
-        const summary = document.getElementById('det-summary');
-        summary.innerHTML = avgS4 < 7.5 ? `<b style="color:var(--danger)">⚠️ אזהרה: ציון נהלים ממוצע נמוך (${avgS4.toFixed(1)}).</b>` : `✅ התקדמות תקינה.`;
-        if(maxL >= 10 && maxL < 15) summary.innerHTML += ` | חניך סיים שלב טכני בהצלחה.`;
-
-        const tbody = document.getElementById('history-table-body'); tbody.innerHTML = '';
-        [...t.lessons].reverse().forEach(l => {
-            tbody.innerHTML += `<tr>
-                <td>${l.date}</td><td>${l.mission}</td><td>${l.mission==='שעות נוספות'?l.extraDesc:l.lessonNums.join(',')}</td><td>${l.ins}</td>
-                <td><span class="score-val">${l.s1}</span><span class="score-val">${l.s2}</span><span class="score-val">${l.s3}</span><span class="score-val">${l.s4}</span><span class="score-val">${l.s5}</span></td>
-                <td style="text-align:right">${l.notes}</td>
-            </tr>`;
-        });
-    }
-
-    function resetForm() {
-        document.getElementById('in-date').valueAsDate = new Date();
-        document.getElementById('in-ins').value = ''; document.getElementById('in-notes').value = '';
-        document.getElementById('in-extra-desc').value = ''; selectedLessons = [];
-        [1,2,3,4,5].forEach(i => document.getElementById('in-s'+i).value = '');
-        clearSig(); updateChips();
-    }
-
-    // ==============================
-    // ניהול חניכים
-    // ==============================
-    function addNewTrainee() {
-        const n = prompt("שם חניך:");
-        if(n) {
-            trainees.push({id: Date.now(), name: n, lessons: []});
-            save();
-            renderTraineeList();
-        }
-    }
-
-    function renderTraineeList() {
-        const l = document.getElementById('trainee-list'); l.innerHTML = '';
-        if(trainees.length === 0) {
-            l.innerHTML = '<p style="color:#999; grid-column:1/-1; text-align:center;">אין חניכים עדיין. לחץ על "+ הוסף חניך"</p>';
-            return;
-        }
-        trainees.forEach(t => {
-            l.innerHTML += `<div onclick="openTrainee(${t.id})" style="background:white; padding:20px; border-radius:12px; cursor:pointer; border-right:6px solid var(--rail-blue); box-shadow:0 2px 10px rgba(0,0,0,0.05);">
-                <h3 style="margin:0">${t.name}</h3>
-                <p style="color:#666; margin-top:5px;">${t.lessons.length} דיווחים | לחץ לצפייה ודיווח</p>
+function renderTraineeList() {
+    const l = document.getElementById('trainee-list');
+    const empty = document.getElementById('empty-msg');
+    l.innerHTML = '';
+    if (trainees.length === 0) { empty.style.display = 'block'; return; }
+    empty.style.display = 'none';
+    trainees.forEach(t => {
+        let maxL = 0;
+        t.lessons.forEach(l => { l.lessonNums.forEach(n => { if (l.mission !== 'שעות נוספות' && n > maxL) maxL = n; }); });
+        const pct = Math.min((maxL / 50) * 100, 100).toFixed(0);
+        const phase = maxL <= 10 ? 'שלב טכני' : maxL <= 30 ? 'שלב תפעולי' : 'שלב מסחרי';
+        l.innerHTML += `
+            <div class="trainee-card" onclick="openTrainee(${t.id})">
+                <div class="card-top">
+                    <div class="card-name">${t.name}</div>
+                    <div class="card-sub">${phase} • שיעור ${maxL}/50</div>
+                    <div class="card-progress"><div class="card-progress-bar" style="width:${pct}%"></div></div>
+                </div>
+                <div class="card-bottom">
+                    <span class="card-lessons-count">${t.lessons.length} דיווחים</span>
+                    <div class="card-actions">
+                        <button class="card-action-btn" onclick="editTraineeName(${t.id}, '${t.name.replace(/'/g, "\\'")}', event)" title="עריכת שם">✏️</button>
+                        <button class="card-action-btn del" onclick="deleteTrainee(${t.id}, '${t.name.replace(/'/g, "\\'")}', event)" title="מחיקה">🗑️</button>
+                    </div>
+                </div>
             </div>`;
-        });
+    });
+}
+
+// =============================================
+// פרטי חניך
+// =============================================
+function openTrainee(id) {
+    currentId = id;
+    document.getElementById('main-view').classList.remove('active-view');
+    document.getElementById('detail-view').classList.add('active-view');
+    document.getElementById('log-body').classList.remove('open');
+    initTicks();
+    setTimeout(initCanvas, 200);
+    updateInsDropdown();
+    resetForm();
+    renderDetail();
+}
+function showMainView() {
+    currentId = null;
+    document.getElementById('detail-view').classList.remove('active-view');
+    document.getElementById('main-view').classList.add('active-view');
+}
+
+function initTicks() {
+    const c = document.getElementById('roadmap-ticks'); c.innerHTML = '';
+    for (let i = 0; i <= 50; i++) { const t = document.createElement('div'); t.className = 'tick'; c.appendChild(t); }
+}
+
+function renderDetail() {
+    const t = trainees.find(x => x.id === currentId);
+    if (!t) return;
+    let maxL = 0, sums = [0, 0, 0, 0, 0];
+    t.lessons.forEach(l => {
+        l.lessonNums.forEach(n => { if (l.mission !== 'שעות נוספות' && n > maxL) maxL = n; });
+        [1, 2, 3, 4, 5].forEach((n, idx) => sums[idx] += l['s' + n]);
+    });
+
+    document.getElementById('det-name').innerText = t.name;
+    document.getElementById('det-sub').innerText = `${t.lessons.length} דיווחים • שיעור ${maxL} מתוך 50`;
+    document.getElementById('train-marker').style.right = `calc(${(maxL / 50) * 100}% - 15px)`;
+
+    // Stats
+    const labels = ["רכבת", "קו", "סטיק", "נהלים", "משמעת"];
+    const avgs = sums.map(s => t.lessons.length ? (s / (t.lessons.length * 10)) * 100 : 0);
+    document.getElementById('stats-row').innerHTML = labels.map((lbl, i) => {
+        const avg = avgs[i];
+        const color = t.lessons.length === 0 ? 'var(--neutral)' : avg < 65 ? 'var(--danger)' : avg < 82 ? 'var(--warning)' : 'var(--success)';
+        return `<div class="stat-card" style="background:${color}"><div class="stat-label">${lbl}</div><div class="stat-val">${avg.toFixed(0)}%</div></div>`;
+    }).join('');
+
+    // Insights
+    let insight = "החניך נמצא בשלבי למידה ראשוניים. מומלץ לוודא הבנה של מערכות הנהיגה הבסיסיות.", icon = "💡";
+    if (t.lessons.length > 0) {
+        if (avgs[3] < 70) { insight = "⚠️ רמת הנהלים נמוכה. יש לבצע חזרה תיאורטית לפני המשך."; icon = "⚠️"; }
+        else if (maxL >= 45) { insight = "החניך לקראת סיום. מומלץ לבצע סימולציית מבחן מסכם."; icon = "🏁"; }
+        else if (maxL > 10 && avgs[2] > 85) { insight = "ביצועי סטיק מצוינים. ניתן להתקדם לקטעים מורכבים."; icon = "✅"; }
+        else if (maxL > 30) { insight = "שלב תפעולי מתקדם: דגש על עמידה בלוחות זמנים ומסחריות."; icon = "📊"; }
     }
+    document.getElementById('insight-text').innerText = insight;
+    document.getElementById('insight-icon').innerText = icon;
+
+    // Table
+    const tbody = document.getElementById('history-table-body'); tbody.innerHTML = '';
+    [...t.lessons].reverse().forEach(l => {
+        tbody.innerHTML += `<tr>
+            <td>${l.date}</td><td>${l.mission}</td>
+            <td>${l.mission === 'שעות נוספות' ? l.extraDesc : l.lessonNums.join(',')}</td>
+            <td>${l.ins}</td>
+            <td>${[1,2,3,4,5].map(n => `<span class="score-badge">${l['s'+n]}</span>`).join('')}</td>
+            <td style="text-align:right; color:#555;">${l.notes}</td>
+        </tr>`;
+    });
+}
+
+// =============================================
+// טופס + שיעורים
+// =============================================
+function updateChips() {
+    const mission = document.getElementById('in-mission').value;
+    const chips = document.getElementById('lesson-chips');
+    const extraWrap = document.getElementById('extra-desc-wrap');
+    chips.innerHTML = '';
+    if (mission === 'שעות נוספות') {
+        chips.style.display = 'none'; extraWrap.style.display = 'block'; return;
+    }
+    chips.style.display = 'flex'; extraWrap.style.display = 'none';
+
+    const t = trainees.find(x => x.id === currentId);
+    const locked = new Set();
+    t.lessons.forEach(l => { if (l.mission !== 'שעות נוספות') l.lessonNums.forEach(n => locked.add(n)); });
+    let next = 1; while (locked.has(next)) next++;
+
+    for (let i = 1; i <= 50; i++) {
+        const isLocked = locked.has(i);
+        const chip = document.createElement('div');
+        chip.className = 'chip';
+        chip.innerText = i;
+        let state = isLocked ? 'locked' : (i === next || selectedLessons.includes(i - 1)) ? 'available' : 'disabled';
+        if (selectedLessons.includes(i)) state = 'selected';
+        chip.style.background = state === 'locked' ? '#2d4a6a' : state === 'selected' ? 'var(--success)' : state === 'available' ? 'white' : '#1e3348';
+        chip.style.color = state === 'disabled' ? '#4a6080' : state === 'locked' ? '#7090a8' : state === 'selected' ? 'white' : '#1a2a3a';
+        chip.style.opacity = state === 'disabled' ? '0.4' : '1';
+        chip.style.cursor = (state === 'available' || state === 'selected') ? 'pointer' : 'default';
+        if (state === 'available' || state === 'selected') {
+            chip.onclick = () => {
+                if (selectedLessons.includes(i)) selectedLessons = selectedLessons.filter(n => n < i);
+                else selectedLessons.push(i);
+                updateChips();
+            };
+        }
+        chips.appendChild(chip);
+    }
+}
+
+function validateAndSave() {
+    const scores = [1, 2, 3, 4, 5].map(i => parseInt(document.getElementById('in-s' + i).value));
+    const ins = document.getElementById('in-ins-select').value;
+    if (!ins) return alert("חובה לבחור מדריך מהרשימה.");
+    if (!isSigned) return alert("חובה לחתום על הטופס לפני השמירה.");
+    if (document.getElementById('in-mission').value !== 'שעות נוספות' && selectedLessons.length === 0) return alert("בחר לפחות שיעור אחד.");
+    if (scores.some(s => isNaN(s) || s < 1 || s > 10)) return alert("יש למלא ציונים תקינים (1-10) לכל המיומנויות.");
+    const t = trainees.find(x => x.id === currentId);
+    t.lessons.push({
+        date: document.getElementById('in-date').value,
+        mission: document.getElementById('in-mission').value,
+        lessonNums: [...selectedLessons],
+        extraDesc: document.getElementById('in-extra-desc').value,
+        ins,
+        s1: scores[0], s2: scores[1], s3: scores[2], s4: scores[3], s5: scores[4],
+        notes: document.getElementById('in-notes').value
+    });
+    saveTrainees();
+    resetForm();
+    alert("✅ המשוב נשמר בהצלחה!");
+}
+
+function resetForm() {
+    document.getElementById('in-date').valueAsDate = new Date();
+    document.getElementById('in-notes').value = '';
+    document.getElementById('in-extra-desc').value = '';
+    selectedLessons = [];
+    [1, 2, 3, 4, 5].forEach(i => document.getElementById('in-s' + i).value = '');
+    clearSig();
+    updateChips();
+}
+
+// =============================================
+// Canvas חתימה
+// =============================================
+const canvas = document.getElementById('sig-canvas');
+const ctx = canvas.getContext('2d');
+let drawing = false;
+
+function initCanvas() {
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight || 140;
+    ctx.strokeStyle = "#1a2a3a"; ctx.lineWidth = 2.5; ctx.lineCap = "round"; ctx.lineJoin = "round";
+}
+const getPos = (e) => {
+    const r = canvas.getBoundingClientRect();
+    const src = e.touches ? e.touches[0] : e;
+    return { x: src.clientX - r.left, y: src.clientY - r.top };
+};
+canvas.addEventListener('mousedown', e => { drawing = true; isSigned = true; const p = getPos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); });
+canvas.addEventListener('mousemove', e => { if (!drawing) return; e.preventDefault(); const p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); });
+window.addEventListener('mouseup', () => drawing = false);
+canvas.addEventListener('touchstart', e => { drawing = true; isSigned = true; const p = getPos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); });
+canvas.addEventListener('touchmove', e => { if (!drawing) return; e.preventDefault(); const p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); });
+canvas.addEventListener('touchend', () => drawing = false);
+function clearSig() { if (canvas.width) ctx.clearRect(0, 0, canvas.width, canvas.height); isSigned = false; }
+
+// =============================================
+// PDF
+// =============================================
+function exportPDF() {
+    html2pdf().set({ margin: 10, filename: `דוח_${trainees.find(x => x.id === currentId)?.name || ''}.pdf`, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4' } })
+        .from(document.getElementById('pdf-content')).save();
+}
 </script>
 </body>
 </html>
