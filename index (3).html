@@ -256,7 +256,7 @@
 <div class="container">
 
     <!-- דף ראשי -->
-    <div id="main-view" class="view active-view">
+    <div id="main-view" class="view">
         <header>
             <h1 class="header-title">ניהול הכשרת נהגים</h1>
             <div style="display:flex; gap:10px; flex-wrap:wrap;">
@@ -1206,7 +1206,6 @@ Promise.all([
     document.getElementById('main-view').classList.add('active-view');
     renderList();
     renderInsTags();
-    // מאזינים לעדכונים בזמן אמת
     traineesRef.on('value', snap => {
         trainees = snap.val() ? Object.values(snap.val()) : [];
         renderList();
@@ -1218,7 +1217,10 @@ Promise.all([
         updateInsDropdown();
     });
 }).catch(err => {
-    loadDiv.innerHTML = `<span style="color:#fc8181;font-size:1em;">❌ שגיאת חיבור: ${err.message}</span>`;
+    loadDiv.innerHTML = `
+        <span style="color:#fc8181;font-size:1.1em;">❌ שגיאת חיבור</span>
+        <span style="color:#a0aec0;font-size:0.85em;max-width:300px;text-align:center;">${err.message}</span>
+        <button onclick="location.reload()" style="margin-top:8px;padding:10px 24px;background:#3498db;color:white;border:none;border-radius:8px;cursor:pointer;font-size:1em;">נסה שוב</button>`;
 });
 </script>
 </body>
