@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>מערכת הכשרת נהגים - V20</title>
-    <!-- Firebase SDK -->
+    <title>מערכת הכשרת נהגים - V20 - גרסת בסיס</title>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
     <style>
@@ -49,7 +48,7 @@
         .card-name { color: white; font-size: 1.2em; font-weight: 700; margin: 0 0 3px 0; }
         .card-sub  { color: #a0b4c8; font-size: 0.82em; }
         .card-bar  { height: 5px; background: rgba(255,255,255,0.15); border-radius: 3px; margin-top: 12px; }
-        .card-bar-fill { height: 100%; background: var(--rail-blue); border-radius: 3px; }
+        .card-bar-fill { height: 0%; background: var(--rail-blue); border-radius: 3px; transition: width 0.5s; }
         .card-bottom { padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; }
         .card-count { font-size: 0.88em; color: #718096; font-weight: 600; }
         .card-acts  { display: flex; gap: 6px; }
@@ -57,206 +56,41 @@
         .cab:hover { background: #f7fafc; }
         .cab.del:hover { background: #fff5f5; border-color: var(--danger); color: var(--danger); }
 
-        .ins-tags { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px; }
-        .ins-tag { background: white; border: 1px solid #ddd; border-radius: 20px; padding: 5px 12px; font-size: 0.88em; display: inline-flex; align-items: center; gap: 6px; }
-        .ins-tag button { background: none; border: none; color: var(--danger); cursor: pointer; font-weight: bold; }
-
-        /* ===========================
-           ROADMAP — בדיוק כמו V19
-           ===========================
-           ב-RTL: ימין=התחלה, שמאל=סוף
-           גבול טכני/תפעולי  → right:20%
-           גבול תפעולי/מסחרי → right:60%
-           סיום               → right:100%
-           רכבת: right = calc((maxL/50)*100% - 16px)
-        */
-        .roadmap-wrapper {
-            position: relative;
-            padding: 54px 0 0 0;   /* רק padding-top לדגלים — אפס למטה לדיוק */
-            margin: 40px 0 30px 0;
-            overflow: visible;     /* מאפשר דגל ב-right:100% להיות גלוי */
-        }
-
-        /* פס הגרף */
-        .roadmap-container {
-            width: 100%;
-            height: 36px;
-            background: #e9ecef;
-            border-radius: 6px;
-            position: relative;
-            display: flex;
-            border: 1px solid #ccc;
-            overflow: hidden;
-        }
-
-        /* מקטעי הפס */
-        .roadmap-segment {
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
-            font-size: 0.85em;
-            position: relative;
-            overflow: hidden;
-        }
-        .roadmap-segment span {
-            position: relative;
-            z-index: 2;
-            text-shadow: 0 1px 3px rgba(0,0,0,0.3);
-            pointer-events: none;
-        }
-
-        /* שנתות בתוך כל מקטע — נבנות ע"י JS */
-        .seg-tick {
-            position: absolute;
-            top: 0; bottom: 0;
-            width: 1px;
-            background: rgba(0,0,0,0.15);
-            z-index: 1;
-            pointer-events: none;
-        }
-
-        /*
-          דגל — מרכוז מדויק:
-          width:0 → אלמנט ללא רוחב
-          right:X% → הקצה הימני (= המרכז כי רוחב=0) מיושר בדיוק על X%
-          align-items:center → emoji ועמוד ממורכזים על אותה עמודה
-          bottom:36px = גובה הפס (padding-bottom=0, אז הפס בתחתית wrapper)
-        */
-        .flag-anchor {
-            position: absolute;
-            bottom: 36px;
-            width: 0;
-            overflow: visible;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            z-index: 5;
-            pointer-events: none;
-        }
-        .flag-top  { font-size: 22px; line-height: 1; white-space: nowrap; }
-        .flag-pole { width: 2px; height: 36px; background: #444; }
-        .flag-pole-end { width: 3px; height: 40px; background: #111; }
-
-        /*
-          רכבת — מרכוז מדויק:
-          width:0; overflow:visible; text-align:center
-          right = (maxL/50)*100% → מרכז הרכבת בדיוק על שיעור X
-        */
-        .train-marker {
-            position: absolute;
-            bottom: 36px;          /* מעל הפס */
-            margin-bottom: 2px;
-            width: 0;
-            overflow: visible;
-            white-space: nowrap;
-            text-align: center;
-            line-height: 1;
-            transition: right 1.5s cubic-bezier(0.22, 1, 0.36, 1);
-            z-index: 10;
-            font-size: 30px;
-            filter: drop-shadow(0 3px 5px rgba(0,0,0,0.2));
-        }
-
-        /* ===== Insight ===== */
-        .insight-box { background: #fff; border: 1px solid #e0e6ed; border-right: 5px solid var(--rail-blue); padding: 18px 20px; border-radius: 12px; margin-bottom: 28px; display: flex; align-items: flex-start; gap: 14px; box-shadow: 0 4px 10px rgba(0,0,0,0.03); }
-        .insight-icon { font-size: 22px; }
-        .insight-content b { color: var(--rail-dark); font-size: 1.05em; display: block; margin-bottom: 4px; }
-        .insight-content span { color: #555; font-size: 0.95em; line-height: 1.5; }
-
-        /* ===== Stats ===== */
-        .section-title { font-size: 1.15em; font-weight: bold; margin: 28px 0 14px 0; color: var(--rail-dark); border-right: 5px solid var(--rail-blue); padding-right: 14px; }
-        .stats-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
-        .stat-card { padding: 18px 8px; border-radius: 14px; text-align: center; color: white; font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        .stat-label { font-size: 0.74em; opacity: 0.95; margin-bottom: 6px; line-height: 1.3; }
-        .stat-val   { font-size: 1.8em; }
-
-        /* ===== Log ===== */
-        .log-header { background: #f8f9fa; width: 100%; padding: 16px 20px; border-radius: 12px; border: 1px solid #e0e0e0; margin-top: 28px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-weight: bold; transition: 0.2s; }
-        .log-header:hover { background: #edf2f7; }
-        .log-body { display: none; overflow-x: auto; padding-top: 14px; }
-        .log-body.open { display: block; }
-        table { width: 100%; border-collapse: collapse; min-width: 750px; }
-        th { background: #f1f3f5; padding: 13px; color: #555; font-size: 0.84em; border-bottom: 2px solid #dee2e6; text-align: center; }
-        td { padding: 13px; border-bottom: 1px solid #eee; text-align: center; font-size: 0.9em; }
-        .score-badge { background: #edf2f7; padding: 4px 8px; border-radius: 6px; font-weight: bold; font-size: 0.88em; margin: 0 2px; border: 1px solid #cbd5e0; }
-
-        /* ===== טופס משוב — שדות בהירים ===== */
-        .form-section { background: #2c3e50; color: white; padding: 30px; border-radius: 20px; margin-top: 40px; }
-        .form-section h3 { margin: 0 0 24px 0; color: #f1c40f; font-size: 1.4em; border-bottom: 1px solid #3d5166; padding-bottom: 14px; }
-        .form-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-bottom: 22px; }
-        .fg label { display: block; margin-bottom: 8px; font-size: 0.88em; color: #b0c4d4; font-weight: 700; }
-        .fg input, .fg select {
-            width: 100%; padding: 11px 14px; border-radius: 8px;
-            border: 2px solid #4a6278;
-            background: #f8fafc; color: #1a2a3a;
-            font-size: 0.95em; font-family: inherit;
-            transition: border-color 0.2s;
-        }
-        .fg input:focus, .fg select:focus { outline: none; border-color: var(--rail-blue); background: white; }
-        .fg select option { background: white; color: #1a2a3a; }
-
-        .chips-label { font-size: 0.88em; color: #b0c4d4; font-weight: 700; display: block; margin-bottom: 10px; }
-        #lesson-chips { display: flex; flex-wrap: wrap; gap: 7px; }
-
-        /* Chips ברורים על רקע כהה */
-        .chip { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-size: 0.82em; font-weight: bold; transition: 0.15s; }
-        .chip-locked    { background: #34495e; color: #6a8499; cursor: default; }
-        .chip-selected  { background: var(--success); color: white; cursor: pointer; }
-        .chip-available { background: #f0f4f8; color: #1a2a3a; border: 1.5px solid #cbd5e0; cursor: pointer; }
-        .chip-disabled  { background: #243447; color: #3d5166; opacity: 0.45; cursor: default; }
-
-        .skill-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-top: 20px; }
-        .skill-box { background: rgba(255,255,255,0.07); padding: 14px 8px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); text-align: center; }
-        .skill-box label { display: block; color: #f1c40f; font-size: 0.76em; margin-bottom: 8px; font-weight: bold; line-height: 1.3; }
-        .skill-box input { width: 80%; padding: 9px 4px; text-align: center; font-size: 1.3em; font-weight: bold; border-radius: 7px; border: 2px solid #4a6278; background: #f8fafc; color: #1a2a3a; }
-        .skill-box input:focus { outline: none; border-color: var(--rail-blue); background: white; }
-
-        #sig-canvas { border: 2px dashed #cbd5e0; background: #fff; cursor: crosshair; touch-action: none; width: 100%; height: 140px; border-radius: 12px; display: block; }
-        .sig-wrap { background: white; padding: 22px; border-radius: 14px; margin-top: 28px; text-align: center; }
-        .sig-wrap label { color: var(--rail-dark); font-weight: bold; display: block; margin-bottom: 12px; }
-        .sig-clear { background: none; border: none; color: var(--danger); cursor: pointer; font-size: 0.92em; margin-top: 10px; font-weight: bold; }
-
-        .detail-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 10px; }
+        /* ROADMAP */
+        .roadmap-container { width: 100%; height: 32px; border-radius: 6px; overflow: hidden; position: relative; border: 1px solid #ccc; margin-top: 10px; }
+        .seg-tick { position: absolute; top: 0; bottom: 0; width: 1px; background: rgba(0,0,0,0.1); z-index: 1; }
 
         /* גרף חניכה */
         .chinuch-wrapper { margin: 12px 0 28px 0; }
-        .chinuch-label { font-size: 0.85em; font-weight: 700; color: #718096; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
-        .chinuch-label span { color: #a0aec0; font-weight: 400; }
+        .chinuch-label { font-size: 0.85em; font-weight: 700; color: #718096; margin-bottom: 8px; display: flex; justify-content: space-between; }
         .chinuch-bar-outer { width: 100%; height: 22px; background: #e9ecef; border-radius: 4px; overflow: hidden; position: relative; border: 1px solid #ccc; }
-        .chinuch-bar-fill { height: 100%; background: linear-gradient(to left, #8e44ad, #9b59b6); border-radius: 4px 0 0 4px; transition: width 1s ease; position: relative; overflow: hidden; }
-        .chinuch-bar-fill::after {
-            content: '';
-            position: absolute; inset: 0;
-            background-image: repeating-linear-gradient(
-                to left,
-                rgba(255,255,255,0) 0%, rgba(255,255,255,0) calc(100%/50 - 1px),
-                rgba(255,255,255,0.25) calc(100%/50 - 1px), rgba(255,255,255,0.25) calc(100%/50)
-            );
-        }
-        .chinuch-bar-ticks { position: absolute; inset: 0; display: flex; pointer-events: none; }
-        .chinuch-tick { flex: 1; border-left: 1px solid rgba(0,0,0,0.1); }
+        .chinuch-bar-fill { height: 100%; background: linear-gradient(to left, #8e44ad, #9b59b6); width: 0%; transition: width 1s ease; }
 
-        /* כותרת תובנות */
-        .alerts-title { font-size: 1.15em; font-weight: bold; margin: 28px 0 12px 0; color: var(--rail-dark); border-right: 5px solid var(--rail-blue); padding-right: 14px; }
+        /* יומן */
+        .log-header { background: #f8f9fa; width: 100%; padding: 16px 20px; border-radius: 12px; border: 1px solid #e0e0e0; margin-top: 28px; cursor: pointer; display: flex; justify-content: space-between; }
+        .log-body { display: none; overflow-x: auto; padding-top: 14px; }
+        .log-body.open { display: block; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px; border-bottom: 1px solid #eee; text-align: center; }
 
+        /* טופס */
+        .form-section { background: #2c3e50; color: white; padding: 30px; border-radius: 20px; margin-top: 40px; }
+        .form-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+        .fg label { display: block; margin-bottom: 8px; font-size: 0.88em; color: #b0c4d4; }
+        .fg input, .fg select, .fg textarea { width: 100%; padding: 11px; border-radius: 8px; border: none; background: #f8fafc; }
+        
+        #sig-canvas { border: 2px dashed #cbd5e0; background: #fff; width: 100%; height: 140px; border-radius: 12px; margin-top: 10px; cursor: crosshair; touch-action: none; }
+        
         @media (max-width: 660px) {
-            .view { padding: 18px; }
-            .header-title { font-size: 1.5em; }
-            #trainee-list { grid-template-columns: 1fr; }
             .form-grid-3 { grid-template-columns: 1fr; }
-            .stats-row { grid-template-columns: repeat(3, 1fr); }
-            .skill-grid { grid-template-columns: repeat(3, 1fr); }
+            #trainee-list { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
 <div class="container">
 
-    <!-- דף ראשי -->
-    <div id="main-view" class="view">
+    <div id="main-view" class="view active-view">
         <header>
             <h1 class="header-title">ניהול הכשרת נהגים</h1>
             <div style="display:flex; gap:10px; flex-wrap:wrap;">
@@ -265,962 +99,276 @@
             </div>
         </header>
 
-        <!-- הוספת חניך -->
         <div id="add-panel" style="display:none" class="panel">
             <h4>➕ הוספת חניך חדש</h4>
             <div class="panel-row">
-                <input type="text" id="new-trainee-name" placeholder="שם מלא של החניך..."
-                    onkeydown="if(event.key==='Enter') confirmAddTrainee()">
-                <button class="btn btn-blue"  onclick="confirmAddTrainee()">הוסף</button>
-                <button class="btn btn-ghost" onclick="togglePanel('add-panel')">ביטול</button>
+                <input type="text" id="new-trainee-name" placeholder="שם מלא של החניך...">
+                <button class="btn btn-blue" onclick="confirmAddTrainee()">הוסף</button>
             </div>
         </div>
 
-        <!-- ניהול מדריכים -->
         <div id="ins-panel" style="display:none" class="panel">
-            <h4>👨‍🏫 ניהול מדריכים / חונכים</h4>
+            <h4>👨‍🏫 ניהול מדריכים</h4>
             <div class="panel-row">
-                <input type="text" id="new-ins-name" placeholder="שם המדריך / חונך..."
-                    onkeydown="if(event.key==='Enter') addInstructor()">
+                <input type="text" id="new-ins-name" placeholder="שם המדריך...">
                 <button class="btn btn-dark" onclick="addInstructor()">הוסף</button>
             </div>
-            <div id="ins-tags" class="ins-tags"></div>
+            <div id="ins-tags" style="margin-top:10px;"></div>
         </div>
 
         <div id="trainee-list"></div>
-        <p id="empty-msg" style="display:none; text-align:center; color:#a0aec0; margin-top:40px; font-size:1.05em;">
-            אין חניכים עדיין — לחץ על "+ חניך חדש"
-        </p>
+        <p id="empty-msg" style="display:none; text-align:center; color:#999;">אין חניכים עדיין.</p>
     </div>
 
-    <!-- דף פרטי חניך -->
     <div id="detail-view" class="view">
-        <div class="detail-top">
-            <button class="btn btn-ghost" onclick="showMainView()">← חזרה לרשימה</button>
-            <button class="btn btn-dark"  onclick="window.print()">🖨️ הדפס / PDF</button>
-        </div>
-
-        <div id="pdf-content">
-            <h1 id="det-name" style="margin:0 0 4px; font-size:2.5em; color:var(--rail-dark); font-weight:800;"></h1>
-            <p id="det-sub" style="color:#a0aec0; margin:0 0 8px; font-size:0.93em;"></p>
-
-            <!-- ROADMAP — גרף קורס -->
-            <div style="margin: 36px 0 10px 0;">
-                <div style="font-size:0.85em; font-weight:700; color:#718096; margin-bottom:8px; display:flex; justify-content:space-between;">
-                    <span>📍 התקדמות קורס</span>
-                    <span id="course-count" style="color:#a0aec0; font-weight:400;">שיעור 0 / 50</span>
-                </div>
-
-                <!--
-                  RTL: right:0% = קצה ימני = שיעור 0 (התחלה)
-                       right:100% = קצה שמאלי = שיעור 50 (סיום)
-                  טכני:   right:0   → width:20%  (שיעורים 1-10)
-                  תפעולי: right:20% → width:40%  (שיעורים 11-30)
-                  מסחרי:  right:60% → width:40%  (שיעורים 31-50)
-                  דגל 1: right:20%  (גבול טכני/תפעולי)
-                  דגל 2: right:60%  (גבול תפעולי/מסחרי)
-                  דגל 3: right:100% (סיום)
-                  transform:translateX(50%) = מרכז כל אלמנט בדיוק על הנקודה
-                -->
-                <div style="position:relative; padding-top:40px; overflow:visible;">
-
-                    <!-- דגל 1: גבול טכני/תפעולי — right:20% -->
-                    <div style="position:absolute; bottom:32px; right:20%; transform:translateX(50%);
-                                display:flex; flex-direction:column; align-items:center;
-                                pointer-events:none; z-index:10;">
-                        <span style="font-size:20px; line-height:1;">🚩</span>
-                        <div style="width:2px; height:8px; background:#e74c3c;"></div>
-                    </div>
-
-                    <!-- דגל 2: גבול תפעולי/מסחרי — right:60% -->
-                    <div style="position:absolute; bottom:32px; right:60%; transform:translateX(50%);
-                                display:flex; flex-direction:column; align-items:center;
-                                pointer-events:none; z-index:10;">
-                        <span style="font-size:20px; line-height:1;">🚩</span>
-                        <div style="width:2px; height:8px; background:#e74c3c;"></div>
-                    </div>
-
-                    <!-- דגל 3: סיום — right:100% -->
-                    <div style="position:absolute; bottom:32px; right:100%; transform:translateX(50%);
-                                display:flex; flex-direction:column; align-items:center;
-                                pointer-events:none; z-index:10;">
-                        <span style="font-size:20px; line-height:1;">🚩</span>
-                        <div style="width:2px; height:8px; background:#e74c3c;"></div>
-                    </div>
-
-                    <!-- רכבת: bottom:32px = מעל הפס -->
-                    <div id="train-marker"
-                         style="position:absolute; bottom:32px; right:0%;
-                                transform:translateX(50%);
-                                font-size:26px; line-height:1; z-index:20;
-                                transition:right 1.4s cubic-bezier(0.22,1,0.36,1);
-                                filter:drop-shadow(0 2px 4px rgba(0,0,0,0.2));
-                                pointer-events:none;">
-                        🚂
-                    </div>
-
-                    <!-- פס הגרף -->
-                    <div id="course-bar-outer"
-                         style="width:100%; height:32px; border-radius:6px;
-                                overflow:hidden; position:relative; border:1px solid #ccc;">
-                        <!-- טכני: right:0, width:20% -->
-                        <div style="position:absolute;top:0;bottom:0;right:0;width:20%;
-                                    background:#3498db;display:flex;align-items:center;
-                                    justify-content:center;color:white;font-size:0.8em;font-weight:700;
-                                    text-shadow:0 1px 2px rgba(0,0,0,0.3);">טכני</div>
-                        <!-- תפעולי: right:20%, width:40% -->
-                        <div style="position:absolute;top:0;bottom:0;right:20%;width:40%;
-                                    background:#d4a017;display:flex;align-items:center;
-                                    justify-content:center;color:#1a2a3a;font-size:0.8em;font-weight:700;">תפעולי</div>
-                        <!-- מסחרי: right:60%, width:40% -->
-                        <div style="position:absolute;top:0;bottom:0;right:60%;width:40%;
-                                    background:#27ae60;display:flex;align-items:center;
-                                    justify-content:center;color:white;font-size:0.8em;font-weight:700;
-                                    text-shadow:0 1px 2px rgba(0,0,0,0.3);">מסחרי</div>
-                        <!-- שנתות -->
-                        <div id="course-ticks" style="position:absolute;inset:0;pointer-events:none;"></div>
-                    </div>
-                </div>
+        <button class="btn btn-ghost" onclick="showMainView()">← חזרה לרשימה</button>
+        <h1 id="det-name" style="margin-top:20px; color:var(--rail-dark);"></h1>
+        
+        <div style="margin: 30px 0;">
+            <div style="display:flex; justify-content:space-between; font-size:0.9em;">
+                <span>📍 התקדמות קורס</span>
+                <span id="course-count">0 / 50</span>
             </div>
-
-            <!-- גרף חניכה — מוצג רק אם יש שיעורי חניכה -->
-            <div id="chinuch-section" class="chinuch-wrapper" style="display:none;">
-                <div class="chinuch-label">
-                    חניכה מעשית
-                    <span id="chinuch-count">0 / 50 שיעורים</span>
+            <div style="position:relative; padding-top:40px;">
+                <div style="position:absolute; bottom:32px; right:20%; transform:translateX(50%); z-index:10;">🚩</div>
+                <div style="position:absolute; bottom:32px; right:60%; transform:translateX(50%); z-index:10;">🚩</div>
+                <div style="position:absolute; bottom:32px; right:100%; transform:translateX(50%); z-index:10;">🏁</div>
+                
+                <div id="train-marker" style="position:absolute; bottom:32px; right:0%; transform:translateX(50%); font-size:26px; z-index:20; transition: right 1s ease;">🚂</div>
+                
+                <div class="roadmap-container">
+                    <div style="position:absolute; right:0; width:20%; height:100%; background:#3498db; opacity:0.8;"></div>
+                    <div style="position:absolute; right:20%; width:40%; height:100%; background:#f1c40f; opacity:0.8;"></div>
+                    <div style="position:absolute; right:60%; width:40%; height:100%; background:#2ecc71; opacity:0.8;"></div>
                 </div>
-                <div class="chinuch-bar-outer">
-                    <div id="chinuch-bar-fill" class="chinuch-bar-fill" style="width:0%"></div>
-                    <div class="chinuch-bar-ticks" id="chinuch-ticks"></div>
-                </div>
-            </div>
-
-            <div class="alerts-title">תובנות והמלצות</div>
-            <div id="alerts-container"></div>
-
-            <div class="section-title">סטטוס כשירות</div>
-            <div class="stats-row" id="stats-row"></div>
-
-            <div class="log-header" onclick="document.getElementById('log-body').classList.toggle('open')">
-                <span>📋 יומן שיעורים מלא</span>
-                <span>לחץ להצגה/הסתרה ▼</span>
-            </div>
-            <div id="log-body" class="log-body">
-                <table>
-                    <thead>
-                        <tr><th>תאריך</th><th>משימה</th><th>שיעורים</th><th>מדריך</th><th>ר/ק/ס/נ/מ</th><th>הערות</th><th></th></tr>
-                    </thead>
-                    <tbody id="history-tbody"></tbody>
-                </table>
             </div>
         </div>
 
-        <!-- טופס משוב -->
+        <div id="chinuch-section" class="chinuch-wrapper" style="display:none;">
+            <div class="chinuch-label">חניכה מעשית <span id="chinuch-count">0 / 50</span></div>
+            <div class="chinuch-bar-outer"><div id="chinuch-bar-fill" class="chinuch-bar-fill"></div></div>
+        </div>
+
         <div class="form-section">
-            <h3>✍️ דיווח משוב יומי חדש</h3>
+            <h3>✍️ דיווח משוב חדש</h3>
             <div class="form-grid-3">
                 <div class="fg"><label>תאריך</label><input type="date" id="in-date"></div>
                 <div class="fg">
                     <label>סוג משימה</label>
-                    <select id="in-mission" onchange="updateChips()">
+                    <select id="in-mission">
                         <option value="קורס">קורס</option>
                         <option value="חניכה">חניכה</option>
-                        <option value="שעות נוספות">שעות נוספות / כשירות</option>
+                        <option value="שעות נוספות">כשירות/שעות נוספות</option>
                     </select>
                 </div>
-                <div class="fg"><label>מדריך / חונך</label><select id="in-ins"></select></div>
+                <div class="fg"><label>מדריך</label><select id="in-ins"></select></div>
             </div>
-
-            <span class="chips-label">סמן שיעורים שבוצעו (שמור על רצף):</span>
-            <div id="lesson-chips"></div>
-            <div class="fg" id="extra-wrap" style="display:none; margin-top:12px;">
-                <input type="text" id="in-extra" placeholder="פרט נושא השיעור / הכשירות...">
-            </div>
-
-            <div class="skill-grid">
-                <div class="skill-box"><label>מערכות רכבת</label><input type="number" id="s1" min="1" max="10"></div>
-                <div class="skill-box" id="s2-box"><label id="s2-label">מבנה דיפו</label><input type="number" id="s2" min="1" max="10"></div>
-                <div class="skill-box"><label>תפעול סטיק</label><input type="number" id="s3" min="1" max="10"></div>
-                <div class="skill-box"><label>נהלים</label><input type="number" id="s4" min="1" max="10"></div>
-                <div class="skill-box"><label>משמעת</label><input type="number" id="s5" min="1" max="10"></div>
-            </div>
-            <div id="s2-hint" style="font-size:0.78em;color:#b0c4d4;margin-top:8px;text-align:center;"></div>
-
-            <div class="fg" style="margin-top:20px;">
-                <textarea id="in-notes" rows="3"
-                    placeholder="הערות מקצועיות, דגשים לשיפור או נקודות לשימור..."
-                    style="width:100%; padding:14px; border-radius:10px; border:2px solid #4a6278; background:#f8fafc; color:#1a2a3a; font-family:inherit; font-size:0.95em; resize:vertical;"></textarea>
-            </div>
-
-            <div class="sig-wrap">
-                <label>חתימת המדריך / חונך לאישור:</label>
+            <div class="fg" style="margin-top:15px;"><label>מספרי שיעורים (לדוגמה: 1,2)</label><input type="text" id="in-lessons" placeholder="לדוגמה: 5, 6"></div>
+            <div class="fg" style="margin-top:15px;"><label>הערות</label><textarea id="in-notes" rows="3"></textarea></div>
+            
+            <div style="background:white; padding:15px; border-radius:10px; margin-top:20px;">
+                <label style="color:black; font-weight:bold;">חתימת מדריך:</label>
                 <canvas id="sig-canvas"></canvas>
-                <button class="sig-clear" onclick="clearSig()">✖ נקה חתימה</button>
+                <button class="btn" style="color:red;" onclick="clearSig()">נקה חתימה</button>
             </div>
+            <button class="btn btn-success" onclick="saveLesson()">💾 שמור משוב</button>
+        </div>
 
-            <button class="btn btn-success" onclick="saveLesson()">💾 שמור משוב במערכת</button>
+        <div class="log-header" onclick="document.getElementById('log-body').classList.toggle('open')">
+            <span>📋 יומן שיעורים</span>
+            <span>▼</span>
+        </div>
+        <div id="log-body" class="log-body">
+            <table>
+                <thead><tr><th>תאריך</th><th>משימה</th><th>שיעורים</th><th>מדריך</th><th>הערות</th></tr></thead>
+                <tbody id="history-tbody"></tbody>
+            </table>
         </div>
     </div>
 </div>
 
 <script>
 /* =========================================================
-   Firebase
+   Firebase Setup
    ========================================================= */
 const firebaseConfig = {
-    apiKey:            "AIzaSyCnv_TtezNA_vC2VaCKgW9uENlkXlPcOxs",
-    authDomain:        "dynamic-feedback-system.firebaseapp.com",
-    databaseURL:       "https://dynamic-feedback-system-default-rtdb.europe-west1.firebasedatabase.app",
-    projectId:         "dynamic-feedback-system",
-    storageBucket:     "dynamic-feedback-system.firebasestorage.app",
+    apiKey: "AIzaSyCnv_TtezNA_vC2VaCKgW9uENlkXlPcOxs",
+    authDomain: "dynamic-feedback-system.firebaseapp.com",
+    databaseURL: "https://dynamic-feedback-system-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "dynamic-feedback-system",
+    storageBucket: "dynamic-feedback-system.firebasestorage.app",
     messagingSenderId: "608824054092",
-    appId:             "1:608824054092:web:dedb20d936f223aa00ffe9"
+    appId: "1:608824054092:web:dedb20d936f223aa00ffe9"
 };
 firebase.initializeApp(firebaseConfig);
-const db            = firebase.database();
-const traineesRef   = db.ref('trainees_v20');
-const instructorsRef= db.ref('instructors_v20');
+const db = firebase.database();
+const traineesRef = db.ref('trainees_v20');
+const instructorsRef = db.ref('instructors_v20');
 
 /* =========================================================
-   STATE
+   State & Logic
    ========================================================= */
-let trainees        = [];
-let instructors     = [];
-let currentId       = null;
-let selectedLessons = [];
-let isSigned        = false;
+let trainees = [];
+let instructors = [];
+let currentId = null;
+let drawing = false;
+let isSigned = false;
 
-function persist() {
-    const tData = {};
-    trainees.forEach(t => { tData[t.id] = t; });
-    traineesRef.set(tData);
+// חתימה
+const canvas = document.getElementById('sig-canvas');
+const ctx = canvas.getContext('2d');
 
-    const iData = {};
-    instructors.forEach((name, i) => { iData[i] = name; });
-    instructorsRef.set(iData);
+function setupCanvas() {
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+    ctx.strokeStyle = "#1a2a3a";
+    ctx.lineWidth = 3;
 }
 
-/* =========================================================
-   פרמטר דינמי — מבנה דיפו (שיעורים 1-10) / מבנה קו (11+)
-   ========================================================= */
-function updateS2Label() {
-    const t = trainees.find(x => x.id === currentId);
-    if (!t) return;
-    // חישוב שיעור הקורס המקסימלי שכבר בוצע
-    let maxCourse = 0;
-    (t.lessons||[]).forEach(l => {
-        if (l.mission === 'קורס')
-            (l.lessonNums||[]).forEach(n => { if (n > maxCourse) maxCourse = n; });
-    });
-    // גם שיעורים שנבחרו עכשיו
-    if (document.getElementById('in-mission')?.value === 'קורס' && selectedLessons.length)
-        maxCourse = Math.max(maxCourse, Math.max(...selectedLessons));
+canvas.addEventListener('mousedown', () => { drawing = true; ctx.beginPath(); });
+window.addEventListener('mouseup', () => { drawing = false; });
+canvas.addEventListener('mousemove', (e) => {
+    if (!drawing) return;
+    const rect = canvas.getBoundingClientRect();
+    ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+    ctx.stroke();
+    isSigned = true;
+});
 
-    const isTech  = maxCourse < 11;
-    const lbl     = document.getElementById('s2-label');
-    const hint    = document.getElementById('s2-hint');
-    const box     = document.getElementById('s2-box');
-    if (!lbl) return;
+function clearSig() { ctx.clearRect(0,0,canvas.width,canvas.height); isSigned = false; }
 
-    if (isTech) {
-        lbl.textContent = 'מבנה דיפו';
-        if (hint) hint.textContent = 'פרמטר זה ישתנה ל"מבנה קו" החל משיעור 11';
-        if (box)  box.style.border = '';
-    } else {
-        lbl.textContent = 'מבנה קו';
-        if (hint) hint.textContent = '';
-        if (box)  box.style.border = '';
-    }
-}
-/* =========================================================
-   ROADMAP — שנתות
-   ========================================================= */
-function buildRoadmap() {
-    [
-        { id: 'seg-tech', n: 10 },
-        { id: 'seg-ops',  n: 20 },
-        { id: 'seg-comm', n: 20 },
-    ].forEach(({ id, n }) => {
-        const seg = document.getElementById(id);
-        if (!seg) return;
-        for (let i = 1; i < n; i++) {
-            const tick = document.createElement('div');
-            tick.className = 'seg-tick';
-            tick.style.right = `${(i / n) * 100}%`;
-            seg.appendChild(tick);
-        }
-    });
-
-    /* שנתות לגרף חניכה — 50 שנתות על הרקע */
-    const ticks = document.getElementById('chinuch-ticks');
-    if (ticks) {
-        for (let i = 0; i < 50; i++) {
-            const t = document.createElement('div');
-            t.className = 'chinuch-tick';
-            ticks.appendChild(t);
-        }
-    }
-}
-
-/* =========================================================
-   ROADMAP — מיקום רכבת (V19 formula)
-   
-   right = calc((maxL/50)*100% - 16px)
-   maxL=0  → right≈0   (קצה ימני, התחלה)
-   maxL=50 → right≈100% (קצה שמאלי, סיום)
-   ========================================================= */
-function setTrain(lesson) {
-    /* width:0 על הרכבת → right:X% = המרכז בדיוק ב-X% */
-    const pct = Math.min(lesson, 50) / 50 * 100;
-    document.getElementById('train-marker').style.right = pct + '%';
-}
-
-/* =========================================================
-   PANELS
-   ========================================================= */
 function togglePanel(id) {
-    const el     = document.getElementById(id);
-    const isOpen = el.style.display === 'block';
-    ['add-panel', 'ins-panel'].forEach(p => document.getElementById(p).style.display = 'none');
-    if (!isOpen) {
-        el.style.display = 'block';
-        const inp = el.querySelector('input');
-        if (inp) setTimeout(() => inp.focus(), 50);
-    }
+    const el = document.getElementById(id);
+    el.style.display = el.style.display === 'none' ? 'block' : 'none';
 }
 
-/* =========================================================
-   חניכים
-   ========================================================= */
 function confirmAddTrainee() {
-    const inp  = document.getElementById('new-trainee-name');
-    const name = inp.value.trim();
-    if (!name) { inp.focus(); return; }
-    trainees.push({ id: Date.now(), name, lessons: [] });
-    persist();
-    inp.value = '';
-    document.getElementById('add-panel').style.display = 'none';
-    renderList();
+    const name = document.getElementById('new-trainee-name').value.trim();
+    if (!name) return;
+    const newT = { id: Date.now(), name: name, lessons: [] };
+    traineesRef.child(newT.id).set(newT);
+    document.getElementById('new-trainee-name').value = '';
+    togglePanel('add-panel');
 }
-function deleteTrainee(id, name, e) {
-    e.stopPropagation();
-    showConfirm(`למחוק את <b>${name}</b> ואת כל נתוני ההכשרה שלו לצמיתות?`, () => {
-        trainees = trainees.filter(t => t.id !== id);
-        persist(); renderList();
-    });
-}
-function editName(id, curName, e) {
-    e.stopPropagation();
-    const el = e.target.closest('.trainee-card').querySelector('.card-name');
-    el.contentEditable = true;
-    el.style.cssText = 'background:rgba(255,255,255,0.18);border-radius:4px;padding:2px 6px;outline:none;';
-    el.focus();
-    const range = document.createRange();
-    range.selectNodeContents(el);
-    window.getSelection().removeAllRanges();
-    window.getSelection().addRange(range);
-    el.onblur = () => {
-        const newName = el.innerText.trim();
-        el.contentEditable = false; el.style.cssText = '';
-        if (newName && newName !== curName) {
-            const t = trainees.find(x => x.id === id);
-            if (t) { t.name = newName; persist(); }
-        } else { el.innerText = curName; }
-    };
-    el.onkeydown = ev => { if (ev.key === 'Enter') { ev.preventDefault(); el.blur(); } };
+
+function addInstructor() {
+    const name = document.getElementById('new-ins-name').value.trim();
+    if (!name) return;
+    instructors.push(name);
+    instructorsRef.set(instructors);
+    document.getElementById('new-ins-name').value = '';
 }
 
 function renderList() {
-    const l   = document.getElementById('trainee-list');
-    const emp = document.getElementById('empty-msg');
-    l.innerHTML = '';
-    if (!trainees.length) { emp.style.display = 'block'; return; }
-    emp.style.display = 'none';
+    const list = document.getElementById('trainee-list');
+    list.innerHTML = '';
+    if (trainees.length === 0) { document.getElementById('empty-msg').style.display = 'block'; return; }
+    document.getElementById('empty-msg').style.display = 'none';
+
     trainees.forEach(t => {
-        const doneLessons = new Set();
-        (t.lessons||[]).forEach(ls => {
-            if (ls.mission === 'קורס')
-                (ls.lessonNums||[]).forEach(n => doneLessons.add(n));
+        let maxL = 0;
+        (t.lessons || []).forEach(l => {
+            if (l.mission === 'קורס') {
+                const nums = Array.isArray(l.lessonNums) ? l.lessonNums : String(l.lessonNums).split(',').map(Number);
+                nums.forEach(n => { if (n > maxL) maxL = n; });
+            }
         });
-        const maxL = doneLessons.size;
-        const pct   = Math.min((maxL / 50) * 100, 100).toFixed(0);
-        const phase = maxL < 10 ? 'שלב טכני' : maxL < 30 ? 'שלב תפעולי' : 'שלב מסחרי';
-        l.innerHTML += `
-        <div class="trainee-card" onclick="openTrainee(${t.id})">
+        const card = document.createElement('div');
+        card.className = 'trainee-card';
+        card.onclick = () => showDetailView(t.id);
+        card.innerHTML = `
             <div class="card-top">
                 <div class="card-name">${t.name}</div>
-                <div class="card-sub">${phase} • שיעור ${maxL}/50</div>
-                <div class="card-bar"><div class="card-bar-fill" style="width:${pct}%"></div></div>
+                <div class="card-sub">שיעור אחרון: ${maxL}</div>
+                <div class="card-bar"><div class="card-bar-fill" style="width:${(maxL/50)*100}%"></div></div>
             </div>
             <div class="card-bottom">
-                <span class="card-count">${(t.lessons||[]).length} דיווחים</span>
-                <div class="card-acts">
-                    <button class="cab" onclick="editName(${t.id},'${t.name.replace(/'/g,"\\'")}',event)" title="עריכת שם">✏️</button>
-                    <button class="cab del" onclick="deleteTrainee(${t.id},'${t.name.replace(/'/g,"\\'")}',event)" title="מחיקה">🗑️</button>
-                </div>
-            </div>
-        </div>`;
+                <div class="card-count">${(t.lessons || []).length} משובים</div>
+                <button class="cab del" onclick="event.stopPropagation(); traineesRef.child(${t.id}).remove()">🗑️</button>
+            </div>`;
+        list.appendChild(card);
     });
 }
 
-/* =========================================================
-   מדריכים
-   ========================================================= */
-function addInstructor() {
-    const inp = document.getElementById('new-ins-name');
-    const n   = inp.value.trim();
-    if (!n) return;
-    if (instructors.includes(n)) { alert('מדריך זה כבר קיים.'); return; }
-    instructors.push(n); inp.value = '';
-    persist(); renderInsTags(); updateInsDropdown();
-}
-/* =========================================================
-   דיאלוג אישור מובנה (במקום confirm שנחסם לפעמים)
-   ========================================================= */
-function showConfirm(msg, onYes) {
-    const overlay = document.createElement('div');
-    overlay.style.cssText = `position:fixed;inset:0;background:rgba(0,0,0,0.5);
-        z-index:9999;display:flex;align-items:center;justify-content:center;`;
-    overlay.innerHTML = `
-        <div style="background:white;border-radius:16px;padding:28px 32px;
-                    max-width:400px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.3);
-                    text-align:center;direction:rtl;">
-            <div style="font-size:2em;margin-bottom:12px;">⚠️</div>
-            <p style="margin:0 0 20px;color:#1a2a3a;font-size:1em;line-height:1.5;">${msg}</p>
-            <div style="display:flex;gap:10px;justify-content:center;">
-                <button id="confirm-yes"
-                    style="background:#e74c3c;color:white;border:none;padding:10px 24px;
-                           border-radius:8px;font-weight:700;cursor:pointer;font-size:1em;">
-                    כן, מחק
-                </button>
-                <button id="confirm-no"
-                    style="background:#f0f4f8;color:#4a5568;border:1.5px solid #e2e8f0;
-                           padding:10px 24px;border-radius:8px;font-weight:700;
-                           cursor:pointer;font-size:1em;">
-                    ביטול
-                </button>
-            </div>
-        </div>`;
-    document.body.appendChild(overlay);
-    overlay.querySelector('#confirm-yes').onclick = () => { document.body.removeChild(overlay); if (onYes) onYes(); };
-    overlay.querySelector('#confirm-no').onclick  = () => { document.body.removeChild(overlay); };
-    overlay.onclick = (e) => { if (e.target === overlay) document.body.removeChild(overlay); };
-}
-
-function showToast(msg) {
-    const t = document.createElement('div');
-    t.style.cssText = `position:fixed;bottom:30px;left:50%;transform:translateX(-50%);
-        background:#1a2a3a;color:white;padding:14px 28px;border-radius:12px;
-        font-size:1em;font-weight:600;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,0.3);
-        animation:fadeIn 0.2s ease;`;
-    t.textContent = msg;
-    document.body.appendChild(t);
-    setTimeout(() => { t.style.opacity='0'; t.style.transition='opacity 0.4s'; setTimeout(() => document.body.removeChild(t), 400); }, 2500);
-}
-function removeInstructor(name) {
-    showConfirm(`למחוק את <b>${name}</b> מרשימת המדריכים?`, () => {
-        instructors = instructors.filter(i => i !== name);
-        persist(); renderInsTags(); updateInsDropdown();
-    });
-}
-function renderInsTags() {
-    const c = document.getElementById('ins-tags');
-    if (!c) return;
-    c.innerHTML = !instructors.length
-        ? '<p style="color:#a0aec0;font-size:0.85em;margin:8px 0 0">אין מדריכים עדיין.</p>'
-        : instructors.map(n => `
-            <span style="display:inline-flex;align-items:center;gap:8px;background:white;
-                border:1.5px solid #e2e8f0;border-radius:20px;padding:6px 10px 6px 14px;
-                margin:3px;font-size:0.9em;">
-                ${n}
-                <button
-                    onclick="removeInstructor('${n.replace(/'/g,"\\'")}')"
-                    title="הסר מדריך"
-                    style="background:#fee2e2;border:none;color:#e74c3c;cursor:pointer;
-                           border-radius:50%;width:22px;height:22px;font-size:13px;
-                           display:flex;align-items:center;justify-content:center;
-                           font-weight:bold;flex-shrink:0;">✕</button>
-            </span>`).join('');
-}
-function updateInsDropdown() {
-    const sel = document.getElementById('in-ins');
-    if (!sel) return;
-    const cur = sel.value;
-    sel.innerHTML = `<option value="" disabled selected>-- בחר מרשימה --</option>`
-        + instructors.map(i => `<option value="${i}"${i===cur?' selected':''}>${i}</option>`).join('');
-}
-
-/* =========================================================
-   פרטי חניך
-   ========================================================= */
-function openTrainee(id) {
+function showDetailView(id) {
     currentId = id;
+    const trainee = trainees.find(t => t.id === id);
     document.getElementById('main-view').classList.remove('active-view');
     document.getElementById('detail-view').classList.add('active-view');
-    document.getElementById('log-body').classList.remove('open');
-    updateInsDropdown();
-    setTimeout(initCanvas, 200);
-    resetForm();
-    renderDetail();
+    document.getElementById('det-name').textContent = trainee.name;
+    
+    updateDashboard(trainee);
+    setupCanvas();
 }
+
 function showMainView() {
-    currentId = null;
     document.getElementById('detail-view').classList.remove('active-view');
     document.getElementById('main-view').classList.add('active-view');
-    renderList();
 }
 
-function renderDetail() {
-    const t = trainees.find(x => x.id === currentId);
-    if (!t) return;
+function updateDashboard(trainee) {
+    let maxC = 0, chinuch = 0;
+    const history = document.getElementById('history-tbody');
+    history.innerHTML = '';
 
-    // קורס בלבד → מזיז את הרכבת
-    let maxL = 0;
-    // חניכה → גרף נפרד
-    const chinuchDone = new Set();
-    let sums = [0,0,0,0,0];
+    (trainee.lessons || []).forEach(l => {
+        const nums = Array.isArray(l.lessonNums) ? l.lessonNums : String(l.lessonNums).split(',').map(Number);
+        if (l.mission === 'קורס') nums.forEach(n => { if (n > maxC) maxC = n; });
+        if (l.mission === 'חניכה') chinuch += nums.length;
 
-    (t.lessons||[]).forEach(l => {
-        if (l.mission === 'קורס') {
-            (l.lessonNums||[]).forEach(n => { if (n > maxL) maxL = n; });
-        } else if (l.mission === 'חניכה') {
-            (l.lessonNums||[]).forEach(n => chinuchDone.add(n));
-        }
-        [1,2,3,4,5].forEach((n,i) => sums[i] += (l['s'+n]||0));
+        history.innerHTML += `<tr><td>${l.date}</td><td>${l.mission}</td><td>${nums.join(',')}</td><td>${l.instructor}</td><td>${l.notes}</td></tr>`;
     });
 
-    const len    = (t.lessons||[]).length;
-    const isTech = maxL < 11; // האם עדיין בשלב טכני?
-
-    document.getElementById('det-name').innerText = t.name;
-    document.getElementById('det-sub').innerText  = `${len} דיווחים • קורס: שיעור ${maxL}/50 • חניכה: ${chinuchDone.size}/50`;
-    setTrain(maxL);
-
-    /* עדכון תווית s2 בטופס */
-    updateS2Label();
-
-    /* גרף חניכה */
-    const chinuchSection = document.getElementById('chinuch-section');
-    if (chinuchDone.size > 0) {
-        chinuchSection.style.display = 'block';
-        const pct = Math.min((chinuchDone.size / 50) * 100, 100);
-        document.getElementById('chinuch-bar-fill').style.width = pct + '%';
-        document.getElementById('chinuch-count').innerText = `${chinuchDone.size} / 50 שיעורים`;
-    } else {
-        chinuchSection.style.display = 'none';
+    document.getElementById('course-count').textContent = `${maxC} / 50`;
+    document.getElementById('train-marker').style.right = (Math.min(maxC, 50) / 50 * 100) + '%';
+    
+    if (chinuch > 0) {
+        document.getElementById('chinuch-section').style.display = 'block';
+        document.getElementById('chinuch-count').textContent = `${chinuch} / 50`;
+        document.getElementById('chinuch-bar-fill').style.width = (Math.min(chinuch, 50) / 50 * 100) + '%';
     }
-
-    /* Stats — תווית s2 דינמית */
-    const s2label = isTech ? 'מבנה דיפו' : 'מבנה קו';
-    const labels  = ['מערכות רכבת', s2label, 'תפעול סטיק', 'נהלים', 'משמעת'];
-    const avgs    = sums.map(s => len ? (s / (len * 10)) * 100 : 0);
-    document.getElementById('stats-row').innerHTML = labels.map((lbl,i) => {
-        const a = avgs[i];
-        const c = !len ? 'var(--neutral)' : a < 65 ? 'var(--danger)' : a < 82 ? 'var(--warning)' : 'var(--success)';
-        // אם עברנו לשלב תפעולי, הציג s2 עם תג "חדש"
-        const newTag = (!isTech && i === 1 && maxL === 11)
-            ? `<div style="font-size:0.65em;opacity:0.85;margin-top:2px;">חדש</div>` : '';
-        return `<div class="stat-card" style="background:${c}">
-                    <div class="stat-label">${lbl}</div>
-                    <div class="stat-val">${a.toFixed(0)}%</div>
-                    ${newTag}
-                </div>`;
-    }).join('');
-
-    /* =====================================================
-       מנגנון התרעות V20 — שכבות מרובות
-       ===================================================== */
-    renderAlerts(t, len, maxL, avgs);
-
-    /* Table */
-    const tbody = document.getElementById('history-tbody');
-    tbody.innerHTML = '';
-    const lessons = t.lessons || [];
-    [...lessons].reverse().forEach((l, revIdx) => {
-        const realIdx = lessons.length - 1 - revIdx; // אינדקס אמיתי במערך
-        tbody.innerHTML += `<tr>
-            <td>${l.date}</td><td>${l.mission}</td>
-            <td>${l.mission==='שעות נוספות' ? l.extraDesc : (l.lessonNums||[]).join(',')}</td>
-            <td>${l.ins}</td>
-            <td>${[1,2,3,4,5].map(n=>`<span class="score-badge">${l['s'+n]}</span>`).join('')}</td>
-            <td style="text-align:right;color:#555;">${l.notes||''}</td>
-            <td><button onclick="deleteLesson(${realIdx})" style="background:none;border:1px solid #e74c3c;color:#e74c3c;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:0.78em;" title="מחק שיעור">🗑️</button></td>
-        </tr>`;
-    });
-}
-
-/* =========================================================
-   שיעורים
-   ========================================================= */
-function updateChips() {
-    const mission   = document.getElementById('in-mission').value;
-    const chips     = document.getElementById('lesson-chips');
-    const extraWrap = document.getElementById('extra-wrap');
-    chips.innerHTML = '';
-    if (mission === 'שעות נוספות') {
-        chips.style.display = 'none'; extraWrap.style.display = 'block'; return;
-    }
-    chips.style.display = 'flex'; extraWrap.style.display = 'none';
-
-    const t       = trainees.find(x => x.id === currentId);
-    const isFree  = mission === 'חניכה';
-
-    // קורס: נועל רק שיעורי קורס שבוצעו
-    // חניכה: נועל רק שיעורי חניכה שבוצעו — ללא קשר לקורס
-    const locked = new Set();
-    (t.lessons||[]).forEach(l => {
-        if (l.mission === mission) (l.lessonNums||[]).forEach(n => locked.add(n));
-    });
-
-    let next = 1;
-    if (!isFree) { while (locked.has(next)) next++; }
-
-    for (let i = 1; i <= 50; i++) {
-        const isLocked = locked.has(i);
-        const chip     = document.createElement('div');
-        chip.className = 'chip';
-        chip.innerText = i;
-
-        let cls;
-        if (selectedLessons.includes(i)) {
-            cls = 'chip-selected';
-        } else if (isLocked) {
-            cls = 'chip-locked';
-        } else if (isFree) {
-            // חניכה: כל שיעור שלא בוצע — פתוח לבחירה חופשית
-            cls = 'chip-available';
-        } else {
-            // קורס: רק השיעור הבא ברצף
-            cls = (i === next || selectedLessons.includes(i - 1)) ? 'chip-available' : 'chip-disabled';
-        }
-
-        chip.classList.add(cls);
-
-        if (cls === 'chip-available' || cls === 'chip-selected') {
-            chip.onclick = () => {
-                if (selectedLessons.includes(i)) {
-                    // בחניכה: מבטלים בחירה ספציפית (לא מוחקים שיעורים אחרים)
-                    if (isFree) selectedLessons = selectedLessons.filter(n => n !== i);
-                    // בקורס: מוחקים את כל השיעורים מ-i ואילך (שמירת רצף)
-                    else         selectedLessons = selectedLessons.filter(n => n < i);
-                } else {
-                    selectedLessons.push(i);
-                }
-                updateChips();
-            };
-        }
-        chips.appendChild(chip);
-    }
-    updateS2Label();
 }
 
 function saveLesson() {
-    const errors  = [];
-    const mission = document.getElementById('in-mission').value;
-    const ins     = document.getElementById('in-ins').value;
-    const scores  = [1,2,3,4,5].map(i => parseInt(document.getElementById('s'+i).value));
-
-    // שם דינמי לפרמטר s2
-    const t2 = trainees.find(x => x.id === currentId);
-    let maxCourse2 = 0;
-    (t2?.lessons||[]).forEach(l => {
-        if (l.mission === 'קורס') (l.lessonNums||[]).forEach(n => { if (n > maxCourse2) maxCourse2 = n; });
-    });
-    if (mission === 'קורס' && selectedLessons.length) maxCourse2 = Math.max(maxCourse2, Math.max(...selectedLessons));
-    const s2name = maxCourse2 < 11 ? 'מבנה דיפו' : 'מבנה קו';
-
-    if (!ins) errors.push('• חובה לבחור מדריך / חונך מהרשימה');
-    if (mission !== 'שעות נוספות' && !selectedLessons.length) errors.push('• חובה לסמן לפחות שיעור אחד');
-    if (mission === 'שעות נוספות' && !document.getElementById('in-extra').value.trim()) errors.push('• חובה לפרט את נושא השעות הנוספות');
-    scores.forEach((s, i) => {
-        if (isNaN(s) || s < 1 || s > 10) errors.push(`• ציון "${['מערכות רכבת', s2name, 'תפעול סטיק','נהלים','משמעת'][i]}" חסר או לא תקין (1-10)`);
-    });
-    if (!isSigned) errors.push('• חובה לחתום על הטופס לאישור');
-
-    if (errors.length > 0) {
-        showConfirm('⚠️ נא להשלים את השדות הבאים:<br><br>' + errors.join('<br>'), null);
-        setTimeout(() => {
-            const btn   = document.getElementById('confirm-yes');
-            const noBtn = document.getElementById('confirm-no');
-            if (btn)   { btn.textContent = 'הבנתי'; btn.style.background = '#3498db'; }
-            if (noBtn) noBtn.style.display = 'none';
-        }, 10);
-        return;
-    }
-
-    const t = trainees.find(x => x.id === currentId);
-    if (!t.lessons) t.lessons = [];
-    t.lessons.push({
-        date:       document.getElementById('in-date').value,
-        mission,
-        lessonNums: [...selectedLessons],
-        extraDesc:  document.getElementById('in-extra').value,
-        ins,
-        s1:scores[0], s2:scores[1], s3:scores[2], s4:scores[3], s5:scores[4],
-        notes: document.getElementById('in-notes').value
-    });
-    persist(); resetForm(); renderDetail();
-    showToast('✅ המשוב נשמר בהצלחה!');
-}
-
-/* =========================================================
-   ROADMAP — בניית שנתות ומיקום מדויק ב-JS
-   ========================================================= */
-function buildCourseTicks() {
-    const container = document.getElementById('course-ticks');
-    if (!container) return;
-    container.innerHTML = '';
-    // 49 שנתות = 50 חלקים שווים
-    for (let i = 1; i < 50; i++) {
-        const tick = document.createElement('div');
-        tick.style.cssText = `position:absolute;top:0;bottom:0;width:1px;background:rgba(0,0,0,0.12);right:${(i/50)*100}%;`;
-        container.appendChild(tick);
-    }
-}
-
-function setTrain(lesson) {
-    /*
-      אחוז טהור — מדויק בכל גודל מסך, לא מושפע מריסייז.
-      lesson=0  → right:0%   (קצה ימני = התחלה)
-      lesson=10 → right:20%  (גבול טכני/תפעולי)
-      lesson=30 → right:60%  (גבול תפעולי/מסחרי)
-      lesson=50 → right:100% (קצה שמאלי = סיום)
-    */
-    const pct = (Math.min(lesson, 50) / 50) * 100;
-    const train = document.getElementById('train-marker');
-    if (train) train.style.right = pct + '%';
-    const counter = document.getElementById('course-count');
-    if (counter) counter.innerText = `שיעור ${lesson} / 50`;
-}
-
-/* =========================================================
-   מחיקת שיעור מהיומן
-   ========================================================= */
-function deleteLesson(idx) {
-    const t = trainees.find(x => x.id === currentId);
-    if (!t) return;
-    const l    = t.lessons[idx];
-    const desc = l.mission === 'שעות נוספות'
-        ? l.extraDesc
-        : `שיעורים ${(l.lessonNums||[]).join(',')}`;
-    showConfirm(`למחוק את הדיווח מתאריך <b>${l.date}</b>?<br><small>${l.mission} — ${desc}</small><br><br>⚠️ פעולה זו אינה הפיכה.`, () => {
-        t.lessons.splice(idx, 1);
-        persist();
-        renderDetail();
-    });
-}
-
-function resetForm() {
-    document.getElementById('in-date').valueAsDate = new Date();
-    document.getElementById('in-notes').value      = '';
-    document.getElementById('in-extra').value      = '';
-    selectedLessons = [];
-    [1,2,3,4,5].forEach(i => document.getElementById('s'+i).value = '');
-    clearSig(); updateChips();
-}
-
-/* =========================================================
-   Canvas — חתימה
-   ========================================================= */
-const canvas = document.getElementById('sig-canvas');
-const ctx    = canvas.getContext('2d');
-let drawing  = false;
-function initCanvas() {
-    canvas.width  = canvas.offsetWidth;
-    canvas.height = canvas.offsetHeight || 140;
-    ctx.strokeStyle = '#1a2a3a'; ctx.lineWidth = 2.5; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-}
-const getPos = e => {
-    const r = canvas.getBoundingClientRect(), s = e.touches ? e.touches[0] : e;
-    return { x: s.clientX - r.left, y: s.clientY - r.top };
-};
-canvas.addEventListener('mousedown',  e => { drawing=true; isSigned=true; const p=getPos(e); ctx.beginPath(); ctx.moveTo(p.x,p.y); });
-canvas.addEventListener('mousemove',  e => { if(!drawing)return; e.preventDefault(); const p=getPos(e); ctx.lineTo(p.x,p.y); ctx.stroke(); });
-window.addEventListener('mouseup',    () => drawing=false);
-canvas.addEventListener('touchstart', e => { drawing=true; isSigned=true; const p=getPos(e); ctx.beginPath(); ctx.moveTo(p.x,p.y); });
-canvas.addEventListener('touchmove',  e => { if(!drawing)return; e.preventDefault(); const p=getPos(e); ctx.lineTo(p.x,p.y); ctx.stroke(); });
-canvas.addEventListener('touchend',   () => drawing=false);
-function clearSig() { if(canvas.width) ctx.clearRect(0,0,canvas.width,canvas.height); isSigned=false; }
-
-/* =========================================================
-   מנגנון התרעות V20
-   =========================================================
-   avgs[0]=רכבת, [1]=קו, [2]=סטיק, [3]=נהלים, [4]=משמעת
-   ========================================================= */
-function renderAlerts(t, len, maxL, avgs) {
-    const container = document.getElementById('alerts-container');
-    if (!container) return;
-    container.innerHTML = '';
-
-    if (len === 0) {
-        container.innerHTML = alertHTML('info', '💡', 'ברוך הבא', 'לא נמצאו דיווחים עדיין. הוסף משוב ראשון כדי להתחיל לקבל תובנות.');
-        return;
-    }
-
-    const alerts = { green: [], red: [], orange: [], info: [] };
-
-    /* ---- 🟢 שכבה 4: מוכנות להסמכה (גובר על הכל) ---- */
-    if (len >= 25 && avgs.every(a => a > 85)) {
-        alerts.green.push({ icon:'🟢', title:'מוכן להסמכה', msg:'החניך מציג יציבות גבוהה בכל הפרמטרים. ניתן לקבוע מבחן מסכם.' });
-    }
-
-    /* ---- 🔴 שכבה 1: קריטי ---- */
-    if (avgs[3] < 70) {
-        alerts.red.push({ icon:'🔴', title:'דגש בטיחות דחוף', msg:'רמת הנהלים נמוכה מהנדרש. נדרש ריענון חוקה מיידי — החניך אינו מוכן לקו ללא שיפור.' });
-    }
-    if (avgs[4] < 60) {
-        alerts.red.push({ icon:'🔴', title:'חריגת משמעת', msg:'רמת המשמעת המקצועית נמוכה. נדרשת שיחת בירור עם החניך.' });
-    }
-
-    /* ---- 🟠 שכבה 2: אזהרה ---- */
-    if (avgs[2] < 70) {
-        alerts.orange.push({ icon:'🟠', title:'קושי בתפעול', msg:'ציון סטיק נמוך. נדרש תרגול מגרש/מוסך (ללא נוסעים) לפני חזרה לקו.' });
-    }
-    if ((avgs[0] - avgs[2]) >= 15) {
-        alerts.orange.push({ icon:'🟠', title:'פער תפעולי', msg:'הידע המערכתי גבוה משמעותית מהיכולת המעשית בסטיק. נדרש תרגול פיזי מוגבר.' });
-    }
-
-    /* מגמה — מחשב רק אם יש לפחות 6 שיעורים */
-    if (len >= 6) {
-        const lessons = t.lessons || [];
-        const avgAll  = l => ([1,2,3,4,5].reduce((s,n) => s + (l['s'+n]||0), 0) / 5);
-        const recent  = lessons.slice(-3).map(avgAll);
-        const prev    = lessons.slice(-6,-3).map(avgAll);
-        const avgR    = recent.reduce((a,b)=>a+b,0) / 3;
-        const avgP    = prev.reduce((a,b)=>a+b,0) / 3;
-        const diff    = avgR - avgP;
-        if (diff <= -2) {
-            alerts.orange.push({ icon:'📉', title:'ירידה משמעותית בביצועים', msg:'שיעורים אחרונים מראים ירידה בולטת ביחס לקודמיהם. מומלץ לקיים שיחת משוב עם החניך ולבחון גורמים אפשריים כמו עומס, עייפות או קושי ספציפי בחומר.' });
-        } else if (diff <= -1) {
-            alerts.orange.push({ icon:'📉', title:'ירידה קלה בביצועים', msg:'זוהתה ירידה קלה בשיעורים האחרונים. כדאי לבדוק האם מדובר בתנודה זמנית או בקושי מתפתח.' });
-        }
-    }
-
-    /* ---- 💡 שכבה 3: חיובי/מידע (רק אם אין 🔴/🟠) ---- */
-    const hasWarnings = alerts.red.length > 0 || alerts.orange.length > 0;
-    if (!hasWarnings) {
-        /* שיפור מגמה */
-        if (len >= 6) {
-            const lessons = t.lessons || [];
-            const avgAll  = l => ([1,2,3,4,5].reduce((s,n) => s + (l['s'+n]||0), 0) / 5);
-            const recent  = lessons.slice(-3).map(avgAll);
-            const prev    = lessons.slice(-6,-3).map(avgAll);
-            const diff    = (recent.reduce((a,b)=>a+b,0)/3) - (prev.reduce((a,b)=>a+b,0)/3);
-            if (diff >= 2) {
-                alerts.info.push({ icon:'📈', title:'שיפור בולט בביצועים', msg:'שיעורים אחרונים מראים עלייה בולטת לעומת הקודמים. החניך בפסגת הביצועים שלו — כדאי לנצל את המומנטום ולהתקדם לחומר מאתגר יותר.' });
-            } else if (diff >= 1) {
-                alerts.info.push({ icon:'📈', title:'שיפור מתמיד', msg:'ביצועי החניך בשיפור מתמיד בשיעורים האחרונים. כדאי לשמר את קצב ההתקדמות.' });
-            }
-        }
-        /* סטיק מצוין */
-        if (avgs[2] > 85 && maxL > 10) {
-            alerts.info.push({ icon:'✅', title:'ביצועי סטיק מצוינים', msg:'ניתן להתקדם לתרגול קטעים מורכבים בקו.' });
-        }
-        /* שלב תפעולי מתקדם */
-        if (maxL > 30 && maxL < 45) {
-            alerts.info.push({ icon:'📊', title:'שלב תפעולי מתקדם', msg:'דגש על עמידה בלוחות זמנים ועל מסחריות מול נוסעים.' });
-        }
-        /* קרוב לסיום */
-        if (maxL >= 45) {
-            alerts.info.push({ icon:'🏁', title:'לקראת סיום הכשרה', msg:'החניך מתקרב לשיעור 50. מומלץ לתזמן סימולציית מבחן מסכם.' });
-        }
-        /* ברירת מחדל */
-        if (!alerts.info.length && !alerts.green.length) {
-            alerts.info.push({ icon:'💡', title:'התקדמות תקינה', msg:'החניך בשלבי למידה. מומלץ לוודא הבנה של מערכות הנהיגה הבסיסיות.' });
-        }
-    }
-
-    /* תזכורת ימים (תמיד) */
-    if (len > 0) {
-        const lastLesson = (t.lessons||[]).slice(-1)[0];
-        if (lastLesson?.date) {
-            const days = Math.floor((Date.now() - new Date(lastLesson.date)) / 86400000);
-            if (days > 14) {
-                alerts.info.push({ icon:'⏰', title:'תזכורת המשך הכשרה', msg:`לא בוצע שיעור כבר ${days} ימים. מומלץ לתזמן המשך הכשרה בהקדם.` });
-            }
-        }
-    }
-
-    /* ---- רינדור — סדר: 🟢 → 🔴 → 🟠 → 💡 ---- */
-    [...alerts.green, ...alerts.red, ...alerts.orange, ...alerts.info].forEach(a => {
-        const level = alerts.green.includes(a) ? 'green' : alerts.red.includes(a) ? 'red' : alerts.orange.includes(a) ? 'orange' : 'info';
-        container.innerHTML += alertHTML(level, a.icon, a.title, a.msg);
-    });
-}
-
-function alertHTML(level, icon, title, msg) {
-    const styles = {
-        green:  { bg:'#f0fff4', border:'#38a169', right:'5px solid #38a169' },
-        red:    { bg:'#fff5f5', border:'#e74c3c', right:'5px solid #e74c3c' },
-        orange: { bg:'#fffaf0', border:'#f39c12', right:'5px solid #f39c12' },
-        info:   { bg:'#ebf8ff', border:'#3498db', right:'5px solid #3498db' },
+    if (!isSigned) { alert("יש לחתום בסוף המשוב"); return; }
+    const trainee = trainees.find(t => t.id === currentId);
+    const newL = {
+        date: document.getElementById('in-date').value,
+        mission: document.getElementById('in-mission').value,
+        instructor: document.getElementById('in-ins').value,
+        lessonNums: document.getElementById('in-lessons').value.split(',').map(n => n.trim()),
+        notes: document.getElementById('in-notes').value,
+        sig: canvas.toDataURL()
     };
-    const s = styles[level] || styles.info;
-    return `<div style="
-        background:${s.bg};
-        border:1px solid ${s.border};
-        border-right:${s.right};
-        padding:14px 18px;
-        border-radius:12px;
-        margin-bottom:10px;
-        display:flex;
-        align-items:flex-start;
-        gap:12px;
-    ">
-        <span style="font-size:20px; line-height:1.3;">${icon}</span>
-        <div>
-            <b style="color:#1a2a3a; display:block; margin-bottom:3px; font-size:0.95em;">${title}</b>
-            <span style="color:#4a5568; font-size:0.88em; line-height:1.5;">${msg}</span>
-        </div>
-    </div>`;
+    if (!trainee.lessons) trainee.lessons = [];
+    trainee.lessons.push(newL);
+    traineesRef.child(currentId).set(trainee);
+    alert("המשוב נשמר");
+    clearSig();
+    showMainView();
 }
 
 /* =========================================================
-   INIT — טעינה מ-Firebase + מאזינים בזמן אמת
+   Listeners
    ========================================================= */
-buildRoadmap();
-buildCourseTicks();
-
-// הצג מסך טעינה בתוך ה-main-view
-document.getElementById('main-view').classList.add('active-view');
-document.getElementById('trainee-list').innerHTML = `
-    <div style="grid-column:1/-1; text-align:center; padding:60px 0; color:#a0aec0;">
-        <div style="width:44px;height:44px;border:4px solid #e2e8f0;border-top-color:#3498db;
-                    border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 16px;">
-        </div>
-        <div style="font-size:1em;">מתחבר למסד הנתונים...</div>
-    </div>`;
-
-Promise.all([
-    traineesRef.once('value'),
-    instructorsRef.once('value')
-]).then(([tSnap, iSnap]) => {
-    trainees    = tSnap.val()  ? Object.values(tSnap.val())  : [];
-    instructors = iSnap.val()  ? Object.values(iSnap.val())  : [];
+traineesRef.on('value', snap => {
+    const data = snap.val();
+    trainees = data ? Object.values(data) : [];
     renderList();
-    renderInsTags();
-    traineesRef.on('value', snap => {
-        trainees = snap.val() ? Object.values(snap.val()) : [];
-        renderList();
-        if (currentId) renderDetail();
-    });
-    instructorsRef.on('value', snap => {
-        instructors = snap.val() ? Object.values(snap.val()) : [];
-        renderInsTags();
-        updateInsDropdown();
-    });
-}).catch(err => {
-    document.getElementById('trainee-list').innerHTML = `
-        <div style="grid-column:1/-1; text-align:center; padding:60px 0;">
-            <div style="font-size:1.1em; color:#e74c3c; margin-bottom:12px;">❌ שגיאת חיבור</div>
-            <div style="font-size:0.85em; color:#a0aec0; margin-bottom:16px;">${err.message}</div>
-            <button onclick="location.reload()"
-                style="padding:10px 24px;background:#3498db;color:white;border:none;
-                       border-radius:8px;cursor:pointer;font-size:1em;font-weight:700;">
-                נסה שוב
-            </button>
-        </div>`;
 });
+
+instructorsRef.on('value', snap => {
+    instructors = snap.val() || [];
+    const sel = document.getElementById('in-ins');
+    const tags = document.getElementById('ins-tags');
+    sel.innerHTML = ''; tags.innerHTML = '';
+    instructors.forEach(ins => {
+        sel.innerHTML += `<option value="${ins}">${ins}</option>`;
+        tags.innerHTML += `<span style="background:#eee; padding:5px; margin:2px; border-radius:5px; display:inline-block;">${ins}</span>`;
+    });
+});
+
+window.onload = setupCanvas;
 </script>
 </body>
 </html>
